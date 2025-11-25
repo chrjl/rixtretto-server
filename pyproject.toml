@@ -1,0 +1,12 @@
+[project]
+name = "dobleshot-server"
+version = "0.0.0"
+dependencies = [
+  "python-dotenv >= 1.2.1",
+  "sqlalchemy >= 2.0.44",
+  "psycopg2-binary >= 2.9.11"
+]
+readme = "README.md"
+
+[project.optional-dependencies]
+dev = ["alembic >= 1.17.2"]
