@@ -1,4 +1,11 @@
 {
+  "origins": {
+    "ET": ["Sidama"],
+    "KE": ["Embu"],
+    "HN": [],
+    "GT": [],
+    "CO": ["Huila"]
+  },
   "roasters": [
     {
       "name": "Christopher L",
@@ -98,6 +105,27 @@
       ]
     },
     {
+      "name": "Humbuggle: A Holiday Blend",
+      "roaster": "Go Get Em Tiger",
+      "is_blend": true,
+      "profile": ["filter"],
+      "notes": ["chocolate", "cherry", "geranium"],
+      "prices": [
+        {
+          "description": "retail",
+          "price": 24,
+          "quantity": 10.5,
+          "unit": "oz"
+        },
+        {
+          "description": "retail",
+          "price": 150,
+          "quantity": 5,
+          "unit": "kg"
+        }
+      ]
+    },
+    {
       "name": "Placer de la Tarde",
       "roaster": "Go Get Em Tiger",
       "is_blend": false,
@@ -117,6 +145,61 @@
           "unit": "kg"
         }
       ]
+    }
+  ],
+  "green_coffees": [
+    {
+      "name": "Privam Estate AA Week 23",
+      "process": "washed",
+      "source": "Privam Estate",
+      "source_type": "single estate",
+      "region": "Embu",
+      "varieties": ["Batian", "Ruiru 11", "SL28"],
+      "details": {
+        "harvest_year": 2024,
+        "supplier": "Showroom Coffee",
+        "processing": "Cherries are handpicked and floated to separate by color and density, then pulped and sorted through washing channels into fermentation tanks, where they sit overnight before more washing and 10-14 days of drying on raised beds.",
+        "references": [
+          {
+            "type": "website",
+            "url": "https://www.croptocup.com/community/privam-estate/"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Tariku Kare",
+      "process": "washed",
+      "source": "Tariku Kare",
+      "source_type": "wet mill",
+      "community": "Bombe",
+      "region": "Sidama",
+      "varieties": ["Ethiopian heirloom"],
+      "details": {
+        "harvest_year": 2024,
+        "supplier": "Showroom Coffee",
+        "processing": "Cherries are centrally processed at Refisa W.S., using single fermentation for 24 hrs and raised bed drying for 8-12 days. ",
+        "references": [
+          {
+            "type": "website",
+            "url": "https://www.croptocup.com/community/tariku-kare/"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Placer de la Tarde",
+      "process": "sugarcane decaf",
+      "community": "San Agustin",
+      "region": "Huila",
+      "details": {
+        "references": [
+          {
+            "type": "website",
+            "url": "https://gget.com/collections/current-menu/products/placer-de-la-tarde-colombia-decaf"
+          }
+        ]
+      }
     }
   ]
 }

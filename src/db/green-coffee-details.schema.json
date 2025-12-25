@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Green Coffee Details",
+  "description": "Optional traceability details for green coffees.",
+  "type": "object",
+  "properties": {
+    "harvest_year": {
+      "type": "number"
+    },
+    "harvest_season": {
+      "type": "string"
+    },
+    "supplier": {
+      "type": "string"
+    },
+    "processing": {
+      "description": "Additional details provided about processing.",
+      "type": "string"
+    },
+    "references": {
+      "description": "Source of additional details",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "description": "Direct communication, website, catalog, etc.",
+            "type": "string"
+          },
+          "url": {
+            "description": "Link to public facing URL, if information taken from website",
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

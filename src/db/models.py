@@ -49,3 +49,30 @@ class RoastedCoffee(Base):
     date_removed: Mapped[datetime | None]
 
     roaster = relationship("Roaster", back_populates="coffees")
+
+
+class Origin(Base):
+    __tablename__ = "origins"
+    __tableargs__ = {"comment": "Geographical origins of green coffees."}
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    region: Mapped[str | None]
+    country: Mapped[str]
+
+
+class GreenCoffee(Base):
+    __tablename__ = "green_coffees"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str]
+    process: Mapped[str | None]
+    source: Mapped[str | None] = mapped_column(
+        comment="The lowest level of traceability of the coffee, e.g. a farm name, cooperative, wet mill."
+    )
+    source_type: Mapped[str | None] = mapped_column(
+        comment="e.g. single estate, microlot, smallholder, cooperative, wet mill, purchasing station"
+    )
+    community: Mapped[str | None]
+    region_id = mapped_column(ForeignKey("origins.id"))
+    varieties = mapped_column(ARRAY(String))
+    details = mapped_column(JSON)

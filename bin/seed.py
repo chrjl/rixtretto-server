@@ -3,7 +3,7 @@ import os, argparse, json
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from db.main import engine
-from db.models import Roaster, RoastedCoffee
+from db.models import Origin, Roaster, RoastedCoffee, GreenCoffee
 
 
 def main():
@@ -48,6 +48,29 @@ def main():
                     profile=entry.get("profile"),
                     notes=entry.get("notes"),
                     prices=entry.get("prices"),
+                )
+            )
+
+        for country, regions in data["origins"].items():
+            session.add(Origin(country=country))
+
+            for region in regions:
+                session.add(Origin(country=country, region=region))
+
+        for coffee in data["green_coffees"]:
+            region_id = session.scalar(
+                select(Origin.id).where(Origin.region == coffee["region"])
+            )
+
+            session.add(
+                GreenCoffee(
+                    name=coffee.get("name"),
+                    process=coffee.get("process"),
+                    source=coffee.get("source"),
+                    source_type=coffee.get("source_type"),
+                    region_id=region_id,
+                    varieties=coffee.get("varieties"),
+                    details=coffee.get("details"),
                 )
             )
 
