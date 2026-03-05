@@ -1,3 +1,145 @@
+scalar JSON
+
 type Query {
-  hello: String!
+  countries(ids: [ID!], filter: OriginFilter): [Country]!
+  origins(ids: [ID!], filter: OriginFilter): [Origin]!
+  roasters(ids: [ID!], filter: RoasterFilter): [Roaster]!
+  roastedCoffees(ids: [ID!], filter: CoffeeFilter): [RoastedCoffee]!
+  greenCoffees(ids: [ID!], filter: CoffeeFilter): [GreenCoffee]!
+}
+
+enum Process {
+  WASHED
+  NATURAL
+  HONEY
+  DECAF
+}
+
+enum Category {
+  BLEND
+  SINGLE
+  DECAF
+}
+
+input LocationInput {
+  city: String
+  state: String
+  country: String
+}
+
+type Location {
+  city: String
+  state: String
+  country: String
+}
+
+input NameFilter {
+  starts_with: String
+  contains: String
+}
+
+input OriginFilter {
+  name: NameFilter
+}
+
+input CoffeeFilter {
+  name: NameFilter
+  profiles: [String!]
+  varieties: [String!]
+  processes: [String!]
+}
+
+input RoasterFilter {
+  name: NameFilter
+  location: LocationInput
+}
+
+type Roaster {
+  id: ID!
+  name: String!
+  location: Location
+  equipment: RoastingEquipment
+  details: JSON
+
+  roastedCoffees: [RoastedCoffee]!
+}
+
+type RoastingEquipment {
+  brand: String
+  model: String
+  capacity: Float
+}
+
+type Country {
+  id: ID!
+  name: String!
+  longName: String!
+
+  origins: [Origin]!
+  roasters: [Roaster]!
+  roastedCoffees: [RoastedCoffee]!
+  greenCoffees: [GreenCoffee]!
+}
+
+type Origin {
+  id: ID!
+  type: String!
+  name: String!
+  processes: [String]!
+  varieties: [String]!
+  harvest_start: Int
+  harvest_end: Int
+  details: JSON
+
+  country: Country!
+  parent: Origin
+  children: [Origin]!
+  descendants: [Origin]!
+  roastedCoffees(filter: CoffeeFilter): [RoastedCoffee]!
+  greenCoffees(filter: CoffeeFilter): [GreenCoffee]!
+  roasters(filter: RoasterFilter): [Roaster]!
+}
+
+type RoastedCoffee {
+  id: ID!
+  roaster: Roaster
+  name: String!
+  # prices: [Price]!
+
+  origins: [Origin]!
+  processes: [String]!
+  varieties: [String]!
+  profile: [String]!
+  tasting: [String]!
+  components: [CoffeeComponent]!
+}
+
+type GreenCoffee {
+  id: ID
+  name: String
+  source: [GreenCoffeeSource]!
+  details: JSON
+
+  origins: [Origin]!
+  processes: [String]!
+  varieties: [String]!
+  tasting: [String]!
+  associations: [CoffeeComponent]!
+  roasters: [Roaster]!
+}
+
+type GreenCoffeeSource {
+  origin: Origin
+  country: Country
+  community: String
+  source: String
+  source_type: String
+}
+
+type CoffeeComponent {
+  roastedCoffee: RoastedCoffee!
+  greenCoffee: GreenCoffee
+  origin: Origin
+  process: String
+  fraction: Float
 }
