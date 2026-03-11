@@ -1,5 +1,12 @@
 from sqlalchemy import URL, make_url
 from sqlalchemy.orm import DeclarativeBase, class_mapper
+from unidecode import unidecode
+from string import punctuation
+
+
+def normalized_text(text: str) -> str:
+    """Normalize text by removing accents, case, and punctuation."""
+    return unidecode(text).lower().translate(str.maketrans("", "", punctuation))
 
 
 def is_in_model(model: type[DeclarativeBase], key: str, *args) -> bool:

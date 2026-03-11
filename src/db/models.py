@@ -5,6 +5,7 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.mutable import MutableList, MutableDict
 from datetime import datetime
 from typing import Any
+from .utilities import normalized_text
 
 
 def getdeepattr(obj: Any, attr: str, default: Any = None):
@@ -105,6 +106,15 @@ class Roaster(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
+    _name_n: Mapped[str] = mapped_column(
+        comment="`name` column normalized to remove case and accents",
+        default=lambda context: normalized_text(
+            context.get_current_parameters()["name"]
+        ),
+        onupdate=lambda context: normalized_text(
+            context.get_current_parameters()["name"]
+        ),
+    )
     city: Mapped[str | None]
     state: Mapped[str | None]
     country: Mapped[str] = mapped_column(
@@ -169,6 +179,15 @@ class RoastedCoffee(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
+    _name_n: Mapped[str] = mapped_column(
+        comment="`name` column normalized to remove case and accents",
+        default=lambda context: normalized_text(
+            context.get_current_parameters()["name"]
+        ),
+        onupdate=lambda context: normalized_text(
+            context.get_current_parameters()["name"]
+        ),
+    )
     roaster_id: Mapped[int] = mapped_column(ForeignKey("roasters.id"))
     is_blend: Mapped[bool]
 
@@ -287,6 +306,15 @@ class Origin(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
+    _name_n: Mapped[str] = mapped_column(
+        comment="`name` column normalized to remove case and accents",
+        default=lambda context: normalized_text(
+            context.get_current_parameters()["name"]
+        ),
+        onupdate=lambda context: normalized_text(
+            context.get_current_parameters()["name"]
+        ),
+    )
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("origins.id"))
     country_id: Mapped[str] = mapped_column(ForeignKey("countries.id"))
     processes: Mapped[list[str] | None] = mapped_column(server_default="[]")
@@ -353,6 +381,15 @@ class GreenCoffee(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str | None] = mapped_column(
         comment="Green coffees without an assigned name refer to generic/unknown coffee of the specified region."
+    )
+    _name_n: Mapped[str] = mapped_column(
+        comment="`name` column normalized to remove case and accents",
+        default=lambda context: normalized_text(
+            context.get_current_parameters()["name"]
+        ),
+        onupdate=lambda context: normalized_text(
+            context.get_current_parameters()["name"]
+        ),
     )
     origin_id: Mapped[int] = mapped_column(ForeignKey("origins.id"))
 

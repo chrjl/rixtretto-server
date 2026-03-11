@@ -10,7 +10,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import orm
 import sqlalchemy.sql as sql
 
 from bin.seed_countries_regions import (
@@ -91,11 +90,23 @@ def upgrade() -> None:
         comment="Data attributed to Cafe Imports.",
     )
 
-    origin_objs = generate_origin_objects()
-
-    with orm.Session(connection) as session:
-        session.add_all(origin_objs)
-        session.commit()
+    op.bulk_insert(
+        origins_table,
+        [
+            {
+                "type": o.type,
+                "name": o.name,
+                "parent_id": o.parent_id,
+                "country_id": o.country_id,
+                "processes": o.processes or [],
+                "varieties": o.varieties or [],
+                "harvest_start": o.harvest_start,
+                "harvest_end": o.harvest_end,
+                "details": o.details or {},
+            }
+            for o in generate_origin_objects()
+        ],
+    )
 
     # Add the new origin model to green_coffees
     op.add_column(
