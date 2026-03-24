@@ -280,6 +280,7 @@ class Origin(Base):
 
     Required attributes:
         name(str)
+        type(str) = "country" | "region"
         [country_id(str, FK) | country ]
         [parent_id(int, self-referential FK) | parent ]: null means the row is a country
 
