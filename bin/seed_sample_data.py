@@ -9,7 +9,9 @@ from db.models import (
     Origin,
     Roaster,
     RoastedCoffee,
+    RoastedCoffeeTag,
     GreenCoffee,
+    GreenCoffeeTag,
     CoffeeComponent,
 )
 from db.utilities import is_in_model, normalized_text
@@ -24,6 +26,7 @@ def green_coffee_objects(engine: Engine, data):
         region_name = origin_data.get("region")
         community = origin_data.get("community")
         details = item.get("details")
+        tags: dict[str, list[str]] = item.get("tags")
 
         with Session(engine) as session:
             origin = None
@@ -53,6 +56,15 @@ def green_coffee_objects(engine: Engine, data):
                     "origin": origin,
                     "community": community,
                     "details": details or {},
+                    "tags": (
+                        [
+                            GreenCoffeeTag(type=t, value=v)
+                            for t, vs in tags.items()
+                            for v in vs
+                        ]
+                        if tags
+                        else None
+                    ),
                 }
             )
         )
@@ -88,8 +100,17 @@ def roaster_object_and_associations(engine, data):
                     for k, v in coffee_data.items()
                     if (is_in_model(RoastedCoffee, k) and k not in ["component"])
                 },
+                "tags": (
+                    [
+                        RoastedCoffeeTag(type=t, value=v)
+                        for t, vs in tags.items()
+                        for v in vs
+                    ]
+                    if (tags := coffee_data.get("tags"))
+                    else None
+                ),
                 **dates,
-            }
+            },
         )
 
         roaster_object.coffees.append(coffee)

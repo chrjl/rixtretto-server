@@ -139,6 +139,13 @@ class Roaster(Base):
         return representation("Roaster", fields)
 
 
+class CoffeeTagType(Base):
+    """Keywords used to describe roasted and/or green coffees."""
+
+    __tablename__ = "coffee_tag_types"
+    name: Mapped[str] = mapped_column(primary_key=True)
+
+
 class RoastedCoffee(Base):
     """Objects from the `roasted_coffees` table.
 
@@ -149,12 +156,11 @@ class RoastedCoffee(Base):
 
     Relationships:
         roaster(Roaster)
+        tags(list[RoastedCoffeeTag])
         component_associations(list[CoffeeComponent])
         components(list[GreenCoffee]): association proxy through `component_associations`
 
     Optional attributes:
-        profile(list[str]): roast profile/attributes
-        notes(list[str]): tasting notes
         date_added(datetime, server default)
         date_updated(datetime, server default)
         date_removed(datetime): coffee removed from the `Roaster`'s menu
@@ -189,16 +195,6 @@ class RoastedCoffee(Base):
         ),
     )
     roaster_id: Mapped[int] = mapped_column(ForeignKey("roasters.id"))
-    is_blend: Mapped[bool]
-
-    profile: Mapped[list[str]] = mapped_column(
-        server_default="[]",
-        comment="A list of the roaster's intended roast attributes, e.g. dark roast, espresso, cold brew.",
-    )
-    notes: Mapped[list[str]] = mapped_column(
-        server_default="[]",
-        comment="A list of the roaster's tasting notes.",
-    )
     prices: Mapped[list[dict]] = mapped_column(server_default="[]")
     date_added: Mapped[datetime] = mapped_column(server_default=func.now())
     date_updated: Mapped[datetime | None] = mapped_column(
@@ -207,6 +203,7 @@ class RoastedCoffee(Base):
     date_removed: Mapped[datetime | None]
 
     roaster: Mapped["Roaster"] = relationship(back_populates="coffees")
+    tags: Mapped[list["RoastedCoffeeTag"]] = relationship()
     component_associations: Mapped[list["CoffeeComponent"]] = relationship(
         back_populates="roasted_coffee",
         cascade="all, delete-orphan",
@@ -236,6 +233,21 @@ class RoastedCoffee(Base):
         }
 
         return representation("RoastedCoffee", {**common_fields, **relationship_fields})
+
+
+class RoastedCoffeeTag(Base):
+    """Association table for descriptors of roasted coffee."""
+
+    __tablename__ = "roasted_coffee_tags"
+    roasted_id: Mapped[int] = mapped_column(
+        ForeignKey("roasted_coffees.id"), primary_key=True
+    )
+    type: Mapped[str] = mapped_column(primary_key=True)
+    value: Mapped[str] = mapped_column(primary_key=True)
+
+    def __repr__(self):
+        fields = {"id": self.roasted_id, self.type: self.value}
+        return representation("RoastedCoffeeTag", fields)
 
 
 class Country(Base):
@@ -351,14 +363,13 @@ class GreenCoffee(Base):
     Relationships:
         origin(Origin)
         country(Country)
+        tags(list[GreenCoffeeTag])
 
     Optional attributes:
         [ region_id(int) | region ]
-        process(str)
         source(str): the lowest level of traceability
         source_type(str): e.g. microlot, single estate, coop
         community(str): more fine-grained region detail
-        varieties(list[str])
 
     JSON attributes:
         details: more fine-grained sourcing information
@@ -394,7 +405,6 @@ class GreenCoffee(Base):
     )
     origin_id: Mapped[int] = mapped_column(ForeignKey("origins.id"))
 
-    process: Mapped[str | None]
     source: Mapped[str | None] = mapped_column(
         comment="The lowest level of traceability of the coffee, e.g. a farm name, cooperative, wet mill."
     )
@@ -402,11 +412,11 @@ class GreenCoffee(Base):
         comment="e.g. single estate, microlot, smallholder, cooperative, wet mill, purchasing station"
     )
     community: Mapped[str | None]
-    varieties: Mapped[list[str]] = mapped_column(server_default="[]")
     details: Mapped[dict] = mapped_column(server_default="{}")
 
     origin: Mapped["Origin"] = relationship(back_populates="green_coffees")
     country: Mapped["Country"] = relationship(secondary="origins", viewonly=True)
+    tags: Mapped[list["GreenCoffeeTag"]] = relationship()
 
     def __repr__(self):
         origin_obj = getdeepattr(self, "origin")
@@ -423,6 +433,21 @@ class GreenCoffee(Base):
         )
 
         return representation("GreenCoffee", {**common_fields, **relationship_fields})
+
+
+class GreenCoffeeTag(Base):
+    """Association table for descriptors of green coffee."""
+
+    __tablename__ = "green_coffee_tags"
+    green_id: Mapped[int] = mapped_column(
+        ForeignKey("green_coffees.id"), primary_key=True
+    )
+    type: Mapped[str] = mapped_column(primary_key=True)
+    value: Mapped[str] = mapped_column(primary_key=True)
+
+    def __repr__(self):
+        fields = {"id": self.green_id, self.type: self.value}
+        return representation("GreenCoffeeTag", fields)
 
 
 class CoffeeComponent(Base):

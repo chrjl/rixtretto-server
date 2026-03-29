@@ -35,7 +35,6 @@
       "roasted_coffees": [
         {
           "name": "Privam Estate AA Week 23",
-          "is_blend": false,
           "components": [
             {
               "name": "Privam Estate AA Week 23",
@@ -43,12 +42,14 @@
               "region": "Embu"
             }
           ],
+          "tags": {
+            "profile": ["single origin"]
+          },
           "date_added": "2025-11-27",
           "date_removed": "2026-01-15"
         },
         {
           "name": "Tariku Kare",
-          "is_blend": false,
           "components": [
             {
               "name": "Tariku Kare",
@@ -56,12 +57,14 @@
               "region": "Sidama"
             }
           ],
+          "tags": {
+            "profile": ["single origin"]
+          },
           "date_added": "2025-11-27",
           "date_removed": "2026-01-15"
         },
         {
           "name": "Dukorere Kawa Anaerobic Lot 10",
-          "is_blend": false,
           "components": [
             {
               "name": "Dukorere Kawa Anaerobic Lot 10",
@@ -69,11 +72,13 @@
               "region": "Northern"
             }
           ],
+          "tags": {
+            "profile": ["single origin"]
+          },
           "date_added": "2026-01-27"
         },
         {
           "name": "Salomon Estela Marshell Natural K56",
-          "is_blend": false,
           "components": [
             {
               "name": "Salomon Estela Marshell Natural K56",
@@ -81,6 +86,9 @@
               "region": "Cajamarca"
             }
           ],
+          "tags": {
+            "profile": ["single origin"]
+          },
           "date_added": "2026-01-27"
         }
       ]
@@ -127,9 +135,10 @@
       "roasted_coffees": [
         {
           "name": "Minor Monuments",
-          "is_blend": true,
-          "profile": ["espresso"],
-          "notes": ["brown sugar", "plum", "dark chocolate"],
+          "tags": {
+            "profile": ["blend", "espresso"],
+            "tasting": ["brown sugar", "plum", "dark chocolate"]
+          },
           "prices": [
             {
               "description": "retail",
@@ -155,9 +164,10 @@
         },
         {
           "name": "Humbuggle: A Holiday Blend",
-          "is_blend": true,
-          "profile": ["filter"],
-          "notes": ["chocolate", "cherry", "geranium"],
+          "tags": {
+            "profile": ["blend", "filter"],
+            "tasting": ["chocolate", "cherry", "geranium"]
+          },
           "prices": [
             {
               "description": "retail",
@@ -182,9 +192,10 @@
         },
         {
           "name": "Placer de la Tarde",
-          "is_blend": false,
-          "profile": ["decaf", "espresso"],
-          "notes": ["brownie", "black forest cake", "cherry"],
+          "tags": {
+            "profile": ["decaf", "espresso", "single origin"],
+            "tasting": ["brownie", "black forest cake", "cherry"]
+          },
           "prices": [
             {
               "description": "retail",
@@ -215,18 +226,21 @@
   "green_coffees": [
     {
       "name": "Privam Estate AA Week 23",
-      "process": "washed",
       "source": "Privam Estate",
       "source_type": "estate",
       "origin": {
         "country": "KE",
         "region": "Embu"
       },
-      "varieties": ["Batian", "Ruiru 11", "SL28"],
+      "tags": {
+        "variety": ["Batian", "Ruiru 11", "SL28"],
+        "process": ["washed"],
+        "tasting": ["brown sugar", "green apple", "lime", "nougat", "pear"]
+      },
       "details": {
         "harvest_year": 2024,
         "supplier": "Showroom Coffee",
-        "processing": "Cherries are handpicked and floated to separate by color and density, then pulped and sorted through washing channels into fermentation tanks, where they sit overnight before more washing and 10-14 days of drying on raised beds.",
+        "description": "Cherries are handpicked and floated to separate by color and density, then pulped and sorted through washing channels into fermentation tanks, where they sit overnight before more washing and 10-14 days of drying on raised beds.",
         "references": [
           {
             "type": "website",
@@ -237,7 +251,6 @@
     },
     {
       "name": "Tariku Kare",
-      "process": "washed",
       "source": "Tariku Kare",
       "source_type": "wet mill",
       "origin": {
@@ -245,11 +258,21 @@
         "region": "Sidama",
         "community": "Bombe"
       },
-      "varieties": ["heirloom"],
+      "tags": {
+        "variety": ["heirloom"],
+        "process": ["washed"],
+        "tasting": [
+          "caramel",
+          "honeydew",
+          "key lime",
+          "peach tea",
+          "pink lemonade"
+        ]
+      },
       "details": {
         "harvest_year": 2024,
         "supplier": "Showroom Coffee",
-        "processing": "Cherries are centrally processed at Refisa W.S., using single fermentation for 24 hrs and raised bed drying for 8-12 days. ",
+        "description": "Cherries are centrally processed at Refisa W.S., using single fermentation for 24 hrs and raised bed drying for 8-12 days. ",
         "references": [
           {
             "type": "website",
@@ -260,7 +283,6 @@
     },
     {
       "name": "Dukorere Kawa Anaerobic Lot 10",
-      "process": "washed",
       "source": "Dukorere Kawa",
       "source_type": "cooperative",
       "origin": {
@@ -268,11 +290,14 @@
         "region": "Northern",
         "community": "Bukure"
       },
-      "varieties": ["bourbon"],
+      "tags": {
+        "variety": ["Bourbon"],
+        "process": ["washed", "anaerobic"],
+        "tasting": ["blackberry jam", "cherry cordial", "cocoa", "cola", "lime"]
+      },
       "details": {
         "harvest_year": 2025,
         "supplier": "Showroom Coffee",
-        "processing": "anerobic",
         "references": [
           {
             "type": "website",
@@ -283,14 +308,28 @@
     },
     {
       "name": "Salomon Estela Marshell Natural K56",
-      "process": "natural",
       "source": "El Pino",
       "source_type": "producer",
       "origin": {
         "country": "PE",
         "region": "Cajamarca"
       },
-      "varieties": ["marshell"],
+      "tags": {
+        "variety": ["Marshell"],
+        "process": ["natural"],
+        "tasting": [
+          "boysenberry",
+          "cocoa",
+          "fudge",
+          "hazelnut",
+          "lemon",
+          "lime seltzer",
+          "lingonberry",
+          "malt chocolate",
+          "raspberry",
+          "wine"
+        ]
+      },
       "details": {
         "harvest_year": 2025,
         "producer_name": "Salomon Estela",
@@ -305,14 +344,15 @@
     },
     {
       "name": "Placer de la Tarde",
-      "process": "decaf",
       "origin": {
         "country": "CO",
         "region": "Huila",
         "community": "San Agustin"
       },
+      "tags": {
+        "process": ["decaf", "sugarcane"]
+      },
       "details": {
-        "processing": "sugarcane decaf",
         "references": [
           {
             "type": "website",
