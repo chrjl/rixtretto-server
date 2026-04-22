@@ -1,5 +1,11 @@
-from sqlalchemy import ForeignKey, JSON, String, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey, JSON, String, select, func
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    mapped_column,
+    relationship,
+    column_property,
+)
 from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.mutable import MutableList, MutableDict
@@ -250,43 +256,6 @@ class RoastedCoffeeTag(Base):
         return representation("RoastedCoffeeTag", fields)
 
 
-class Country(Base):
-    """List of countries of the world, with coffee growing data (if available)
-
-    Required attributes:
-        id(str, PK): GENC 2A code + optional region identifier
-        name(str): short-form name
-
-    Optional attributes:
-        long_name(str): long-form name
-
-    Attributes:
-        processes(list[str])
-        varieties(list[str])
-        harvest_start(int)
-        harvest_end(int)
-
-    Relationships:
-        origins(list[Origin])
-        green_coffees(list[GreenCoffee])
-        coffees(list[RoastedCoffee])
-    """
-
-    __tablename__ = "countries"
-    __table_args__ = {
-        "comment": "List of countries attributed to US Dept. of State; coffee data attributed to Cafe Imports."
-    }
-
-    id: Mapped[str] = mapped_column(String(length=2), primary_key=True)
-    name: Mapped[str]
-    long_name: Mapped[str | None]
-
-    origins: Mapped[list["Origin"]] = relationship(back_populates="country")
-
-    def __repr__(self):
-        return f"Country(id={self.id}, name={self.name})"
-
-
 class Origin(Base):
     """List of coffee growing origins
 
@@ -339,7 +308,7 @@ class Origin(Base):
 
     parent: Mapped["Origin"] = relationship(back_populates="children", remote_side=[id])
     children: Mapped[list["Origin"]] = relationship(back_populates="parent")
-    country: Mapped["Country"] = relationship(back_populates="origins")
+    country: Mapped["Country"] = relationship(back_populates="suborigins")
     green_coffees: Mapped[list["GreenCoffee"]] = relationship(back_populates="origin")
 
     def __repr__(self):
@@ -351,6 +320,54 @@ class Origin(Base):
         }
 
         return representation("Origin", fields)
+
+
+class Country(Base):
+    """List of countries of the world, with coffee growing data (if available)
+
+    Required attributes:
+        id(str, PK): GENC 2A code + optional region identifier
+        name(str): short-form name
+
+    Optional attributes:
+        long_name(str): long-form name
+
+    Attributes:
+        processes(list[str])
+        varieties(list[str])
+        harvest_start(int)
+        harvest_end(int)
+
+    Relationships:
+        suborigins(list[Origin])
+        green_coffees(list[GreenCoffee])
+        coffees(list[RoastedCoffee])
+
+    Column properties:
+        origin_id(int)
+        suborigin_ids(list[int])
+    """
+
+    __tablename__ = "countries"
+    __table_args__ = {
+        "comment": "List of countries attributed to US Dept. of State; coffee data attributed to Cafe Imports."
+    }
+
+    id: Mapped[str] = mapped_column(String(length=2), primary_key=True)
+    name: Mapped[str] = mapped_column()
+    long_name: Mapped[str | None]
+
+    suborigins: Mapped[list["Origin"]] = relationship(back_populates="country")
+
+    origin_id: Mapped[int] = column_property(
+        select(Origin.id)
+        .where(Origin.type == "country", Origin.name == name)
+        .scalar_subquery(),
+        deferred=True,
+    )
+
+    def __repr__(self):
+        return f"Country(id={self.id}, name={self.name})"
 
 
 class GreenCoffee(Base):
@@ -391,7 +408,7 @@ class GreenCoffee(Base):
     __tablename__ = "green_coffees"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str | None] = mapped_column(
+    name: Mapped[str] = mapped_column(
         comment="Green coffees without an assigned name refer to generic/unknown coffee of the specified region."
     )
     _name_n: Mapped[str] = mapped_column(
@@ -416,7 +433,7 @@ class GreenCoffee(Base):
 
     origin: Mapped["Origin"] = relationship(back_populates="green_coffees")
     country: Mapped["Country"] = relationship(secondary="origins", viewonly=True)
-    tags: Mapped[list["GreenCoffeeTag"]] = relationship()
+    tags: Mapped[list["GreenCoffeeTag"]] = relationship(back_populates="green_coffee")
 
     def __repr__(self):
         origin_obj = getdeepattr(self, "origin")
@@ -444,6 +461,8 @@ class GreenCoffeeTag(Base):
     )
     type: Mapped[str] = mapped_column(primary_key=True)
     value: Mapped[str] = mapped_column(primary_key=True)
+
+    green_coffee: Mapped["GreenCoffee"] = relationship(back_populates="tags")
 
     def __repr__(self):
         fields = {"id": self.green_id, self.type: self.value}
@@ -491,6 +510,7 @@ class CoffeeComponent(Base):
     green_id: Mapped[int | None] = mapped_column(ForeignKey("green_coffees.id"))
     origin_id: Mapped[int | None] = mapped_column(ForeignKey("origins.id"))
     process: Mapped[str | None]
+    variety: Mapped[str | None]
 
     fraction: Mapped[int | None] = mapped_column(
         comment="Percentage of blend constituted by green coffee."
