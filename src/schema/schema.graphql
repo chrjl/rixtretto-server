@@ -1,11 +1,12 @@
 scalar JSON
 
 type Query {
-  countries(ids: [ID!], filter: OriginFilter): [Country]!
-  origins(ids: [ID!], filter: OriginFilter): [Origin]!
-  roasters(ids: [ID!], filter: RoasterFilter): [Roaster]!
-  roastedCoffees(ids: [ID!], filter: CoffeeFilter): [RoastedCoffee]!
-  greenCoffees(ids: [ID!], filter: CoffeeFilter): [GreenCoffee]!
+  countries(ids: [ID], filter: Filter): [Country]!
+  origins(ids: [ID], filter: Filter): [Origin]!
+  roasters(ids: [ID], filter: Filter): [Roaster]!
+  roastedCoffees(ids: [ID], filter: Filter): [RoastedCoffee]!
+  greenCoffees(ids: [ID], filter: Filter): [GreenCoffee]!
+  hello(name: String): String
 }
 
 enum Process {
@@ -21,16 +22,17 @@ enum Category {
   DECAF
 }
 
-input LocationInput {
+input LocationFilter {
   city: String
   state: String
-  country: String
+  country_name: String
+  country_code: String
 }
 
 type Location {
   city: String
   state: String
-  country: String
+  country: Country
 }
 
 input NameFilter {
@@ -38,20 +40,17 @@ input NameFilter {
   contains: String
 }
 
-input OriginFilter {
-  name: NameFilter
-}
-
 input CoffeeFilter {
-  name: NameFilter
   profiles: [String!]
   varieties: [String!]
   processes: [String!]
+  tasting: [String!]
 }
 
-input RoasterFilter {
+input Filter {
   name: NameFilter
-  location: LocationInput
+  location: LocationFilter
+  coffeeDetail: CoffeeFilter
 }
 
 type Roaster {
@@ -75,7 +74,9 @@ type Country {
   name: String!
   longName: String!
 
-  origins: [Origin]!
+  origin: Origin
+
+  "List of roasters that roast coffees from origins within the given country."
   roasters: [Roaster]!
   roastedCoffees: [RoastedCoffee]!
   greenCoffees: [GreenCoffee]!
@@ -91,33 +92,35 @@ type Origin {
   harvest_end: Int
   details: JSON
 
-  country: Country!
   parent: Origin
   children: [Origin]!
-  descendants: [Origin]!
-  roastedCoffees(filter: CoffeeFilter): [RoastedCoffee]!
-  greenCoffees(filter: CoffeeFilter): [GreenCoffee]!
-  roasters(filter: RoasterFilter): [Roaster]!
+  suborigins: [Origin]!
+  country: Country!
+  roastedCoffees(filter: Filter): [RoastedCoffee]!
+  greenCoffees(filter: Filter): [GreenCoffee]!
+
+  "List of roasters that roast coffees from the given origin."
+  roasters(filter: Filter): [Roaster]!
 }
 
 type RoastedCoffee {
   id: ID!
-  roaster: Roaster
   name: String!
   # prices: [Price]!
 
+  roaster: Roaster
+  profiles: [String]!
   origins: [Origin]!
   processes: [String]!
   varieties: [String]!
-  profile: [String]!
   tasting: [String]!
   components: [CoffeeComponent]!
 }
 
 type GreenCoffee {
-  id: ID
+  id: ID!
   name: String
-  source: [GreenCoffeeSource]!
+  source: GreenCoffeeSource
   details: JSON
 
   origins: [Origin]!
@@ -129,11 +132,13 @@ type GreenCoffee {
 }
 
 type GreenCoffeeSource {
-  origin: Origin
+  name: String
+  sourceType: String
+  producerName: String
+  harvestYear: Int
   country: Country
+  origin: Origin
   community: String
-  source: String
-  source_type: String
 }
 
 type CoffeeComponent {
