@@ -5,9 +5,11 @@ from ariadne.asgi import GraphQL
 from ariadne.types import ContextValue
 
 from db.main import engine
+from .resolvers import types
 
 environment = getenv("APP_ENV")
 type_defs = gql(load_schema_from_path("src/schema/"))
+schema = make_executable_schema(type_defs, *types, convert_names_case=True)
 
 
 def get_context_value(request, _) -> ContextValue:
@@ -18,16 +20,6 @@ def get_context_value(request, _) -> ContextValue:
         "Session": Session,
     }
 
-
-query = QueryType()
-
-
-@query.field("hello")
-def resolve_hello(*_):
-    return "Hello world!"
-
-
-schema = make_executable_schema(type_defs, query)
 
 app = GraphQL(
     schema,
