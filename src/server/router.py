@@ -1,11 +1,17 @@
 from starlette.applications import Starlette
 from starlette.routing import Route
+from starlette.responses import PlainTextResponse
 
-from api.main import app as api
 
+def router(app):
+    routes = [
+        Route("/api/graphql", app),
+        Route(
+            "/",
+            lambda request: PlainTextResponse(
+                request.query_params.get("message") or "hello world!"
+            ),
+        ),
+    ]
 
-routes = [
-    Route("/api/graphql", api),
-]
-
-app = Starlette(routes=routes)
+    return Starlette(routes=routes)

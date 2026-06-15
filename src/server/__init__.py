@@ -1,2 +1,1 @@
-from .router import app
-from .main import dev, main as start
+from server.main import dev, serve

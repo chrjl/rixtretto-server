@@ -1,20 +1,14 @@
-import os
+import os, asyncio
 from dotenv import load_dotenv
 import uvicorn
 
-
-def main(options={}):
-    if ("host" not in options) and (host := os.getenv("UVICORN_HOST")):
-        options["host"] = host
-    if ("port" not in options) and (port := os.getenv("UVICORN_PORT")):
-        options["port"] = int(port)
-
-    uvicorn.run("server:app", **options)
+from api.main import app as api
+from db.main import engine
+from server.router import router
 
 
-def serve():
-    load_dotenv(f".env.{os.getenv("APP_ENV")}")
-    main()
+def app():
+    return router(api(engine))
 
 
 def dev():
@@ -31,15 +25,19 @@ def dev():
         "log_level": "trace",
     }
 
-    main(options)
+    uvicorn.run("server.main:app", **options)
 
 
-def test(host="127.0.0.1", port=8001):
-    os.environ["APP_ENV"] = "testing"
+def server(options={}):
+    if ("host" not in options) and (host := os.getenv("UVICORN_HOST")):
+        options["host"] = host
+    if ("port" not in options) and (port := os.getenv("UVICORN_PORT")):
+        options["port"] = int(port)
 
-    options = {"host": host, "port": port}
-    main(options)
+    config = uvicorn.Config("server.main:app", **options)
+    return uvicorn.Server(config)
 
 
-if __name__ == "__main__":
-    main()
+def serve():
+    load_dotenv(f".env.{os.getenv("APP_ENV")}")
+    asyncio.run(server().serve())
