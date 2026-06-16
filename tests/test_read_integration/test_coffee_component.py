@@ -1,7 +1,7 @@
-import pytest, requests
-from . import GRAPHQL_ENDPOINT
+import pytest
 
 
+@pytest.mark.use_sample_data(True)
 @pytest.mark.parametrize(
     "name,components",
     [
@@ -9,7 +9,7 @@ from . import GRAPHQL_ENDPOINT
         ("Minor Monuments", {"origins": ["Guatemala", "Honduras"]}),
     ],
 )
-def test_components_of_roasted_coffee(name, components):
+def test_components_of_roasted_coffee(client, name, components):
     query = """
     query($filter: Filter) {
         roastedCoffees(filter: $filter) {
@@ -30,9 +30,7 @@ def test_components_of_roasted_coffee(name, components):
     """
     variables = {"filter": {"name": {"starts_with": name}}}
 
-    response = requests.post(
-        GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-    )
+    response = client.post("/", json={"query": query, "variables": variables})
 
     assert response.status_code == 200
 
@@ -51,6 +49,7 @@ def test_components_of_roasted_coffee(name, components):
             assert origin["name"] in components.get("origins", [])
 
 
+@pytest.mark.use_sample_data(True)
 @pytest.mark.parametrize(
     "name,roasted_coffee_names",
     [
@@ -58,7 +57,7 @@ def test_components_of_roasted_coffee(name, components):
         ("Placer de la Tarde", ["Placer de la Tarde"]),
     ],
 )
-def test_associations_of_green_coffee(name, roasted_coffee_names):
+def test_associations_of_green_coffee(client, name, roasted_coffee_names):
     query = """
     query($filter: Filter) {
         greenCoffees(filter: $filter) {
@@ -79,9 +78,7 @@ def test_associations_of_green_coffee(name, roasted_coffee_names):
     """
     variables = {"filter": {"name": {"starts_with": name}}}
 
-    response = requests.post(
-        GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-    )
+    response = client.post("/", json={"query": query, "variables": variables})
 
     assert response.status_code == 200
 
@@ -96,8 +93,9 @@ def test_associations_of_green_coffee(name, roasted_coffee_names):
             assert roasted_coffee["name"] in roasted_coffee_names
 
 
+@pytest.mark.use_sample_data(True)
 class TestColumns:
-    def test_fraction_of_single_origin_coffees(self):
+    def test_fraction_of_single_origin_coffees(self, client):
         query = """
             query($filter: Filter) {
                 roastedCoffees(filter: $filter) {
@@ -116,8 +114,8 @@ class TestColumns:
 
         filter = {"coffeeDetail": {"profiles": ["single origin"]}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": {"filter": filter}}
+        response = client.post(
+            "/", json={"query": query, "variables": {"filter": filter}}
         )
 
         assert response.status_code == 200

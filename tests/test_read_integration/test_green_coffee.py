@@ -1,7 +1,7 @@
-import pytest, requests
-from . import GRAPHQL_ENDPOINT
+import pytest
 
 
+@pytest.mark.use_sample_data(True)
 class TestGreenCoffeeColumns:
     query = """
     query($ids: [ID], $filter: Filter) {
@@ -19,8 +19,8 @@ class TestGreenCoffeeColumns:
     }
     """
 
-    def test_all_green_coffees(self):
-        response = requests.post(GRAPHQL_ENDPOINT, json={"query": self.query})
+    def test_all_green_coffees(self, client):
+        response = client.post("/", json={"query": self.query})
         data = response.json()["data"]
         result = data["greenCoffees"]
 
@@ -51,6 +51,7 @@ class TestGreenCoffeeColumns:
                 assert type(harvest_year) == int
 
 
+@pytest.mark.use_sample_data(True)
 class TestGreenCoffeeFilters:
     query = """
     query($ids: [ID], $filter: Filter) {
@@ -65,9 +66,9 @@ class TestGreenCoffeeFilters:
         "name",
         ["Privam Estate", "Tariku Kare"],
     )
-    def test_filter_by_id(self, name):
-        response = requests.post(
-            GRAPHQL_ENDPOINT,
+    def test_filter_by_id(self, client, name):
+        response = client.post(
+            "/",
             json={
                 "query": self.query,
                 "variables": {"filter": {"name": {"starts_with": name}}},
@@ -82,8 +83,8 @@ class TestGreenCoffeeFilters:
 
         assert len(coffee_ids) == 1
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT,
+        response = client.post(
+            "/",
             json={"query": self.query, "variables": {"ids": coffee_ids}},
         )
 
@@ -96,13 +97,11 @@ class TestGreenCoffeeFilters:
         "name,is_valid",
         [("Privam Estate", True), ("invalid", False)],
     )
-    def test_filter_by_name(self, name, is_valid):
+    def test_filter_by_name(self, client, name, is_valid):
         filter = {"name": {"contains": name[1:]}}
         variables = {"filter": filter}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": self.query, "variables": variables}
-        )
+        response = client.post("/", json={"query": self.query, "variables": variables})
         result = response.json()["data"]["greenCoffees"]
 
         assert response.status_code == 200
@@ -120,13 +119,11 @@ class TestGreenCoffeeFilters:
             (["washed", "anaerobic"], 3),
         ],
     )
-    def test_filter_by_process(self, processes, count):
+    def test_filter_by_process(self, client, processes, count):
         filter = {"coffeeDetail": {"processes": processes}}
         variables = {"filter": filter}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": self.query, "variables": variables}
-        )
+        response = client.post("/", json={"query": self.query, "variables": variables})
         assert response.status_code == 200
 
         result = response.json()["data"]["greenCoffees"]
@@ -142,13 +139,11 @@ class TestGreenCoffeeFilters:
             (["caturra"], 0),
         ],
     )
-    def test_filter_by_variety(self, varieties, count):
+    def test_filter_by_variety(self, client, varieties, count):
         filter = {"coffeeDetail": {"varieties": varieties}}
         variables = {"filter": filter}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": self.query, "variables": variables}
-        )
+        response = client.post("/", json={"query": self.query, "variables": variables})
         assert response.status_code == 200
 
         result = response.json()["data"]["greenCoffees"]
@@ -158,25 +153,24 @@ class TestGreenCoffeeFilters:
         "tasting,count",
         [(["cocoa"], 2), (["lime"], 2), (["cocoa", "fudge"], 2), (["nothing"], 0)],
     )
-    def test_filter_by_tasting(self, tasting, count):
+    def test_filter_by_tasting(self, client, tasting, count):
         filter = {"coffeeDetail": {"tasting": tasting}}
         variables = {"filter": filter}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": self.query, "variables": variables}
-        )
+        response = client.post("/", json={"query": self.query, "variables": variables})
         assert response.status_code == 200
 
         result = response.json()["data"]["greenCoffees"]
         assert len(result) == count
 
 
+@pytest.mark.use_sample_data(True)
 class TestGreenCoffeeRelationships:
     @pytest.mark.parametrize(
         "name,origin_name,country_id",
         [("Privam Estate", "Embu", "KE"), ("Tariku Kare", "Sidama", "ET")],
     )
-    def test_origin(self, name, origin_name, country_id):
+    def test_origin(self, client, name, origin_name, country_id):
         query = """
         query($filter: Filter) {
             greenCoffees(filter: $filter) {
@@ -195,9 +189,7 @@ class TestGreenCoffeeRelationships:
         """
         variables = {"filter": {"name": {"starts_with": name}}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         result = response.json()["data"]["greenCoffees"]
         origin = result[0]["source"]["origin"]
@@ -208,7 +200,7 @@ class TestGreenCoffeeRelationships:
         "name,processes",
         [("Privam Estate", ["washed"]), ("Placer de la Tarde", ["decaf", "sugarcane"])],
     )
-    def test_processes(self, name, processes):
+    def test_processes(self, client, name, processes):
         query = """
         query($filter: Filter) {
             greenCoffees(filter: $filter) {
@@ -218,9 +210,7 @@ class TestGreenCoffeeRelationships:
         """
         variables = {"filter": {"name": {"starts_with": name}}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         assert response.status_code == 200
 
@@ -236,7 +226,7 @@ class TestGreenCoffeeRelationships:
             ("Tariku Kare", ["heirloom"]),
         ],
     )
-    def test_varieties(self, name, varieties):
+    def test_varieties(self, client, name, varieties):
         query = """
         query($filter: Filter) {
             greenCoffees(filter: $filter) {
@@ -246,9 +236,7 @@ class TestGreenCoffeeRelationships:
         """
         variables = {"filter": {"name": {"starts_with": name}}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         assert response.status_code == 200
 
@@ -267,7 +255,7 @@ class TestGreenCoffeeRelationships:
             ),
         ],
     )
-    def test_tasting(self, name, tasting):
+    def test_tasting(self, client, name, tasting):
         query = """
         query($filter: Filter) {
             greenCoffees(filter: $filter) {
@@ -277,9 +265,7 @@ class TestGreenCoffeeRelationships:
         """
         variables = {"filter": {"name": {"starts_with": name}}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         assert response.status_code == 200
 
@@ -295,7 +281,7 @@ class TestGreenCoffeeRelationships:
             ("Placer de la Tarde", ["Go Get Em Tiger"]),
         ],
     )
-    def test_roasters(self, name, roaster_names):
+    def test_roasters(self, client, name, roaster_names):
         query = """
         query($filter: Filter) {
             greenCoffees(filter: $filter) {
@@ -307,9 +293,7 @@ class TestGreenCoffeeRelationships:
         """
         variables = {"filter": {"name": {"starts_with": name}}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         assert response.status_code == 200
 
@@ -323,7 +307,7 @@ class TestGreenCoffeeRelationships:
         "name",
         ["Privam Estate", "Placer de la Tarde"],
     )
-    def test_associations(self, name):
+    def test_associations(self, client, name):
         query = """
         query($filter: Filter) {
             greenCoffees(filter: $filter) {
@@ -340,9 +324,7 @@ class TestGreenCoffeeRelationships:
         """
         variables = {"filter": {"name": {"starts_with": name}}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         assert response.status_code == 200
 

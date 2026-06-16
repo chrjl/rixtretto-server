@@ -1,11 +1,10 @@
-import pytest, requests
-
-GRAPHQL_ENDPOINT = "http://localhost:8000/api/graphql"
+import pytest
 
 
-def test_hello():
-    name = "dog"
-
+@pytest.mark.parametrize("name", ["dog", "cat"])
+@pytest.mark.echo(True)
+@pytest.mark.use_sample_data(True)
+def test_hello(client, name):
     # graphql
     query = """
     query($name: String) { hello(name: $name) }
@@ -13,9 +12,7 @@ def test_hello():
 
     variables = {"name": name}
 
-    response = requests.post(
-        GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-    )
+    response = client.post("/", json={"query": query, "variables": variables})
 
     assert response.status_code == 200
     assert response.json()["data"]["hello"] == f"Hello {name}!"

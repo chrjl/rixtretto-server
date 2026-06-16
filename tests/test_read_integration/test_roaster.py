@@ -1,7 +1,7 @@
-import pytest, requests
-from . import GRAPHQL_ENDPOINT
+import pytest
 
 
+@pytest.mark.use_sample_data(True)
 class TestRoasterColumns:
     query = """
     query($ids: [ID], $filter: Filter) {
@@ -28,8 +28,8 @@ class TestRoasterColumns:
     """
 
     @pytest.mark.parametrize("count", [2])
-    def test_all_roasters(self, count):
-        response = requests.post(GRAPHQL_ENDPOINT, json={"query": self.query})
+    def test_all_roasters(self, client, count):
+        response = client.post("/", json={"query": self.query})
         result = response.json()["data"]["roasters"]
 
         assert response.status_code == 200
@@ -55,12 +55,10 @@ class TestRoasterColumns:
             ({"name": {"starts_with": "G"}}, "Go Get Em Tiger"),
         ],
     )
-    def test_filter_by_name(self, filter, name):
+    def test_filter_by_name(self, client, filter, name):
         variables = {"filter": filter}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": self.query, "variables": variables}
-        )
+        response = client.post("/", json={"query": self.query, "variables": variables})
         result = response.json()["data"]["roasters"]
 
         assert response.status_code == 200
@@ -76,12 +74,10 @@ class TestRoasterColumns:
             ({"country_name": "united"}, 2),
         ],
     )
-    def test_filter_by_location(self, filter, count):
+    def test_filter_by_location(self, client, filter, count):
         variables = {"filter": {"location": filter}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": self.query, "variables": variables}
-        )
+        response = client.post("/", json={"query": self.query, "variables": variables})
         result = response.json()["data"]["roasters"]
 
         assert response.status_code == 200

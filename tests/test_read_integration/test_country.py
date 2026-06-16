@@ -1,7 +1,7 @@
-import pytest, requests
-from . import GRAPHQL_ENDPOINT
+import pytest
 
 
+@pytest.mark.use_sample_data(True)
 class TestCountryColumns:
     query = """
         query($ids: [ID], $filter: Filter) {
@@ -13,8 +13,8 @@ class TestCountryColumns:
         }
     """
 
-    def test_all_countries(self):
-        response = requests.post(GRAPHQL_ENDPOINT, json={"query": self.query})
+    def test_all_countries(self, client):
+        response = client.post("/", json={"query": self.query})
         result = response.json()["data"]["countries"]
 
         assert response.status_code == 200
@@ -51,12 +51,10 @@ class TestCountryColumns:
             (["ZZ"], []),
         ],
     )
-    def test_filter_by_id(self, ids, expected_result):
+    def test_filter_by_id(self, client, ids, expected_result):
         variables = {"ids": ids}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": self.query, "variables": variables}
-        )
+        response = client.post("/", json={"query": self.query, "variables": variables})
         result = response.json()["data"]["countries"]
 
         assert response.status_code == 200
@@ -72,12 +70,10 @@ class TestCountryColumns:
             ({"name": {"starts_with": "bo", "contains": "ia"}}, 2),
         ],
     )
-    def test_filter_by_name(self, filter, count):
+    def test_filter_by_name(self, client, filter, count):
         variables = {"filter": filter}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": self.query, "variables": variables}
-        )
+        response = client.post("/", json={"query": self.query, "variables": variables})
         result = response.json()["data"]["countries"]
 
         assert response.status_code == 200
@@ -109,12 +105,10 @@ class TestCountryColumns:
             ),
         ],
     )
-    def test_multiple_filters(self, ids, filter, expected_result):
+    def test_multiple_filters(self, client, ids, filter, expected_result):
         variables = {"ids": ids, "filter": filter}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": self.query, "variables": variables}
-        )
+        response = client.post("/", json={"query": self.query, "variables": variables})
         result = response.json()["data"]["countries"]
 
         assert response.status_code == 200
@@ -122,12 +116,13 @@ class TestCountryColumns:
         assert result == expected_result
 
 
+@pytest.mark.use_sample_data(True)
 class TestCountryRelationships:
     @pytest.mark.parametrize(
         "country_id,origin_name",
         [("US", "United States")],
     )
-    def test_origin(self, country_id, origin_name):
+    def test_origin(self, client, country_id, origin_name):
         query = """
         query($country_id: ID, $origin_name: String) {
             countries(ids: [$country_id]) {
@@ -144,9 +139,7 @@ class TestCountryRelationships:
 
         variables = {"country_id": country_id, "origin_name": origin_name}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         assert response.status_code == 200
 
@@ -160,7 +153,7 @@ class TestCountryRelationships:
         "country_id,expected_suborigin_count",
         [("US", 6), ("GT", 9)],
     )
-    def test_suborigins(self, country_id, expected_suborigin_count):
+    def test_suborigins(self, client, country_id, expected_suborigin_count):
         query = """
         query($country_id: ID) {
             countries(ids: [$country_id]) {
@@ -175,9 +168,7 @@ class TestCountryRelationships:
 
         variables = {"country_id": country_id}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         assert response.status_code == 200
 

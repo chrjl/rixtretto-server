@@ -1,55 +1,11 @@
 import pytest
-import json
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from db import models, queries
-from bin.seed_countries_regions import generate_country_objects, generate_origin_objects
-from bin.seed_sample_data import green_coffee_objects, roaster_object_and_associations
-
-SAMPLE_DATA_PATH = "assets/sample-data.json"
 
 
-@pytest.fixture(scope="module", autouse=True)
-def engine():
-    with open(SAMPLE_DATA_PATH) as file:
-        data = json.load(file)
-
-    engine = create_engine("sqlite:///", echo=True)
-    models.Base.metadata.create_all(engine)
-
-    with Session(engine) as session:
-        # Seed country and origin tables
-        session.add_all(generate_country_objects())
-        session.add_all(generate_origin_objects())
-        session.commit()
-
-    # Seed sample data
-    with Session(engine) as session:
-        if green_coffee_data := data.get("green_coffees"):
-            session.add_all(green_coffee_objects(engine, green_coffee_data))
-            session.commit()
-
-    for roaster_data in data.get("roasters"):
-        with Session(engine) as session:
-            r = roaster_object_and_associations(engine, roaster_data)
-
-            roaster_object = r.get("roaster")
-            session.add(roaster_object)
-
-            coffee_objects = r.get("coffees", [])
-            session.add_all(coffee_objects)
-
-            component_objects = r.get("component_associations", [])
-            session.add_all(component_objects)
-            session.commit()
-
-    yield engine
-
-    models.Base.metadata.drop_all(engine)
-    engine.dispose()
-
-
+@pytest.mark.use_sample_data(True)
 class TestSetup:
     def test_green_coffees(self, engine):
         with Session(engine) as session:
@@ -72,6 +28,7 @@ class TestSetup:
             assert len(result) == 10
 
 
+@pytest.mark.use_sample_data(True)
 class TestCountryFilters:
     def test_select(self, engine):
         with Session(engine) as session:
@@ -145,6 +102,7 @@ class TestCountryFilters:
             )
 
 
+@pytest.mark.use_sample_data(True)
 class TestCountryProperties:
     def test_origin_ids(self, engine):
         with Session(engine) as session:
@@ -206,6 +164,7 @@ class TestCountryProperties:
             assert set([r.name for r in result]) == set(coffee_names)
 
 
+@pytest.mark.use_sample_data(True)
 class TestCountryRelationships:
     @pytest.mark.parametrize("country_name", ["Bolivia", "United States"])
     def test_origin_of_country(self, engine, country_name):
@@ -218,6 +177,7 @@ class TestCountryRelationships:
         assert result.name == country_name
 
 
+@pytest.mark.use_sample_data(True)
 class TestOriginFilters:
     def test_select(self, engine):
         with Session(engine) as session:
@@ -305,6 +265,7 @@ def origin_regions_of_hawaii(engine):
         ).all()
 
 
+@pytest.mark.use_sample_data(True)
 class TestOriginSelfRelationships:
     def test_self(self, engine, origin_hawaii, origin_regions_of_hawaii):
         assert origin_hawaii.name == "Hawaii"
@@ -329,6 +290,7 @@ class TestOriginSelfRelationships:
             session.delete(origin_hawaii)
 
 
+@pytest.mark.use_sample_data(True)
 class TestOriginQueries:
     def test_suborigins(
         self, engine, origin_us, origin_hawaii, origin_regions_of_hawaii
@@ -429,6 +391,7 @@ class TestOriginQueries:
             assert result[0].name.startswith(roaster_name)
 
 
+@pytest.mark.use_sample_data(True)
 class TestGreenCoffeeFilters:
     model = models.GreenCoffee
 
@@ -531,6 +494,7 @@ class TestGreenCoffeeFilters:
             assert len(result) == len(expected_coffee_names)
 
 
+@pytest.mark.use_sample_data(True)
 class TestGreenCoffeeQueries:
     model = models.GreenCoffee
 
@@ -631,6 +595,7 @@ class TestGreenCoffeeQueries:
             assert len(result) == count
 
 
+@pytest.mark.use_sample_data(True)
 class TestRoastedCoffeeFilters:
     model = models.RoastedCoffee
 
@@ -751,6 +716,7 @@ class TestRoastedCoffeeFilters:
             assert len(result) == count
 
 
+@pytest.mark.use_sample_data(True)
 class TestRoastedCoffeeQueries:
     model = models.RoastedCoffee
 
@@ -861,6 +827,7 @@ class TestRoastedCoffeeQueries:
             assert len(green_coffees) == counts["green_coffees"]
 
 
+@pytest.mark.use_sample_data(True)
 class TestCoffeeComponentFilters:
     model = models.CoffeeComponent
 

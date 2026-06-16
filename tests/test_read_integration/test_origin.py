@@ -1,7 +1,7 @@
-import pytest, requests
-from . import GRAPHQL_ENDPOINT
+import pytest
 
 
+@pytest.mark.use_sample_data(True)
 class TestOriginColumns:
     query = """
     query($ids: [ID], $filter: Filter) {
@@ -18,20 +18,18 @@ class TestOriginColumns:
     }
     """
 
-    def test_all_origins(self):
-        response = requests.post(GRAPHQL_ENDPOINT, json={"query": self.query})
+    def test_all_origins(self, client):
+        response = client.post("/", json={"query": self.query})
         result = response.json()["data"]["origins"]
 
         assert response.status_code == 200
         assert len(result) == 214
 
-    def test_filter_by_name(self):
+    def test_filter_by_name(self, client):
         filter = {"name": {"starts_with": "Hawaii"}}
         variables = {"filter": filter}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": self.query, "variables": variables}
-        )
+        response = client.post("/", json={"query": self.query, "variables": variables})
         result = response.json()["data"]["origins"]
 
         assert response.status_code == 200
@@ -41,6 +39,7 @@ class TestOriginColumns:
         assert type(result[0]["details"]) == dict
 
 
+@pytest.mark.use_sample_data(True)
 class TestOriginSelfRelationships:
     query = """
     query($filter: Filter) {
@@ -52,7 +51,7 @@ class TestOriginSelfRelationships:
     }
     """
 
-    def test_parent(self):
+    def test_parent(self, client):
         query = """
         query($filter: Filter) {
             origins(filter: $filter) {
@@ -65,14 +64,12 @@ class TestOriginSelfRelationships:
 
         variables = {"filter": {"name": {"starts_with": "hawaii"}}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         result = response.json()["data"]["origins"]
         assert result[0]["parent"]["name"] == "United States"
 
-    def test_children(self):
+    def test_children(self, client):
         query = """
         query($filter: Filter) {
             origins(filter: $filter) {
@@ -85,9 +82,7 @@ class TestOriginSelfRelationships:
 
         variables = {"filter": {"name": {"starts_with": "hawaii"}}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         result = response.json()["data"]["origins"]
         assert len(result[0]["children"]) == 2
@@ -102,7 +97,7 @@ class TestOriginSelfRelationships:
             ),
         ],
     )
-    def test_suborigins(self, origin_name, expected_count, expected_names):
+    def test_suborigins(self, client, origin_name, expected_count, expected_names):
         query = """
         query($filter: Filter) {
             origins(filter: $filter) {
@@ -115,9 +110,7 @@ class TestOriginSelfRelationships:
 
         variables = {"filter": {"name": {"starts_with": origin_name}}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         result = response.json()["data"]["origins"][0]
         suborigin_names = [suborigin["name"] for suborigin in result["suborigins"]]
@@ -127,12 +120,13 @@ class TestOriginSelfRelationships:
         assert set(expected_names) == set(suborigin_names)
 
 
+@pytest.mark.use_sample_data(True)
 class TestOriginRelationships:
     @pytest.mark.parametrize(
         "origin_name,expected_country_name",
         [("Hawaii", "United States"), ("Caranavi", "Bolivia")],
     )
-    def test_country(self, origin_name, expected_country_name):
+    def test_country(self, client, origin_name, expected_country_name):
         query = """
         query($filter: Filter) {
             origins(filter: $filter) {
@@ -146,9 +140,7 @@ class TestOriginRelationships:
 
         variables = {"filter": {"name": {"starts_with": origin_name}}}
 
-        response = requests.post(
-            GRAPHQL_ENDPOINT, json={"query": query, "variables": variables}
-        )
+        response = client.post("/", json={"query": query, "variables": variables})
 
         result = response.json()["data"]["origins"]
 

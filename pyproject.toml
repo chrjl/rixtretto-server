@@ -16,13 +16,17 @@ readme = "README.md"
 dev = [
   "alembic >= 1.18.4",
   "pytest >= 9.0.3",
-  "requests >= 2.33.1",
   "watchfiles >= 1.1.1",
+  "httpx2 >= 2.4.0",
 ]
 
 [tool.pytest]
 addopts = ["-s"]
+markers = [
+  "echo: mark test engine fixture to echo sql output",
+  "use_sample_data: seed sample data into test engine fixture",
+]
 
 [project.scripts]
 serve-dev = "server:dev"
-start = "server:start"
+start = "server:serve"
