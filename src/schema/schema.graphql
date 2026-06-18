@@ -9,6 +9,14 @@ type Query {
   hello(name: String): String
 }
 
+type Mutation {
+}
+
+type Error {
+  code: Int!
+  message: String
+}
+
 enum Process {
   WASHED
   NATURAL
@@ -25,14 +33,20 @@ enum Category {
 input LocationFilter {
   city: String
   state: String
-  country_name: String
-  country_code: String
+  countryName: String
+  countryId: ID
 }
 
 type Location {
   city: String
   state: String
-  country: Country
+  country: Country!
+}
+
+input LocationInput {
+  city: String
+  state: String
+  countryId: ID
 }
 
 input NameFilter {
