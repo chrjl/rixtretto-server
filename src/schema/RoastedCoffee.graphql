@@ -1,0 +1,59 @@
+type RoastedCoffee {
+  id: ID!
+  name: String!
+  # prices: [Price]!
+
+  roaster: Roaster
+  dateAdded: String
+  dateRemoved: String
+  profiles: [String]!
+  tasting: [String]!
+
+  origins: [Origin]!
+  processes: [String]!
+  varieties: [String]!
+  components: [CoffeeComponent]!
+}
+
+input RoastedCoffeeInput {
+  name: String
+  roasterId: ID
+  dateAdded: String
+  dateRemoved: String
+  profiles: [String]
+  tasting: [String]
+}
+
+type RoastedCoffeeMutationResult {
+  status: Boolean!
+  error: Error
+  roastedCoffee: RoastedCoffee
+}
+
+type CoffeeComponent {
+  roastedCoffee: RoastedCoffee!
+  greenCoffee: GreenCoffee
+  origin: Origin
+  process: String
+  variety: String
+  fraction: Float
+}
+
+input CoffeeComponentInput {
+  greenId: ID
+  originId: ID
+  process: String
+  variety: String
+  fraction: Int
+}
+
+type CoffeeComponentMutationResult {
+  status: Boolean!
+  error: Error
+  roastedCoffee: RoastedCoffee!
+  greenCoffee: GreenCoffee
+  origin: Origin
+  process: String
+  variety: String
+  fraction: Float
+}

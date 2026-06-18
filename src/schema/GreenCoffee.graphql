@@ -1,0 +1,47 @@
+type GreenCoffee {
+  id: ID!
+  name: String
+  source: GreenCoffeeSource
+  details: JSON
+
+  origins: [Origin]!
+  processes: [String]!
+  varieties: [String]!
+  tasting: [String]!
+  associations: [CoffeeComponent]!
+  roasters: [Roaster]!
+}
+
+type GreenCoffeeSource {
+  name: String
+  sourceType: String
+  producerName: String
+  harvestYear: Int
+  country: Country
+  origin: Origin
+  community: String
+}
+
+input GreenCoffeeInput {
+  name: String
+  source: GreenCoffeeSourceInput
+  details: JSON
+
+  processes: [String]
+  varieties: [String]
+  tasting: [String]
+}
+
+input GreenCoffeeSourceInput {
+  name: String
+  type: String
+  originId: ID
+  community: String
+  details: JSON
+}
+
+type GreenCoffeeMutationResult {
+  status: Boolean!
+  error: Error
+  greenCoffee: GreenCoffee
+}

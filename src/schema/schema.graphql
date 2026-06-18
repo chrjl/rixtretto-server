@@ -10,6 +10,43 @@ type Query {
 }
 
 type Mutation {
+  roasterCreate(input: RoasterInput!): RoasterMutationResult!
+  roasterUpdate(id: ID, input: RoasterInput!): RoasterMutationResult!
+  greenCoffeeCreate(input: GreenCoffeeInput!): GreenCoffeeMutationResult!
+  greenCoffeeUpdate(
+    id: ID
+    input: GreenCoffeeInput!
+  ): GreenCoffeeMutationResult!
+  greenCoffeeTagAdd(id: ID!, input: CoffeeTagInput): GreenCoffeeMutationResult!
+  greenCoffeeTagDelete(
+    id: ID!
+    input: CoffeeTagInput
+  ): GreenCoffeeMutationResult!
+  roastedCoffeeCreate(input: RoastedCoffeeInput!): RoastedCoffeeMutationResult!
+  roastedCoffeeUpdate(
+    id: ID!
+    input: RoastedCoffeeInput!
+  ): RoastedCoffeeMutationResult!
+  roastedCoffeeTagAdd(
+    id: ID!
+    input: CoffeeTagInput
+  ): RoastedCoffeeMutationResult!
+  roastedCoffeeTagDelete(
+    id: ID!
+    input: CoffeeTagInput
+  ): RoastedCoffeeMutationResult!
+  roastedCoffeeComponentAdd(
+    id: ID!
+    input: CoffeeComponentInput
+  ): CoffeeComponentMutationResult!
+  roastedCoffeeComponentDelete(
+    id: ID!
+    input: CoffeeComponentInput
+  ): CoffeeComponentMutationResult!
+  roastedCoffeeComponentUpdate(
+    id: ID!
+    input: CoffeeComponentInput
+  ): CoffeeComponentMutationResult!
 }
 
 type Error {
@@ -67,20 +104,9 @@ input Filter {
   coffeeDetail: CoffeeFilter
 }
 
-type Roaster {
-  id: ID!
-  name: String!
-  location: Location
-  equipment: RoastingEquipment
-  details: JSON
-
-  roastedCoffees: [RoastedCoffee]!
-}
-
-type RoastingEquipment {
-  brand: String
-  model: String
-  capacity: Float
+input CoffeeTagInput {
+  type: String!
+  values: [String]
 }
 
 type Country {
@@ -114,51 +140,6 @@ type Origin {
   greenCoffees(filter: Filter): [GreenCoffee]!
 
   "List of roasters that roast coffees from the given origin."
-  roasters(filter: Filter): [Roaster]!
-}
-
-type RoastedCoffee {
-  id: ID!
-  name: String!
-  # prices: [Price]!
-
-  roaster: Roaster
-  profiles: [String]!
-  origins: [Origin]!
-  processes: [String]!
-  varieties: [String]!
-  tasting: [String]!
-  components: [CoffeeComponent]!
-}
-
-type GreenCoffee {
-  id: ID!
-  name: String
-  source: GreenCoffeeSource
-  details: JSON
-
-  origins: [Origin]!
-  processes: [String]!
-  varieties: [String]!
-  tasting: [String]!
-  associations: [CoffeeComponent]!
   roasters: [Roaster]!
-}
-
-type GreenCoffeeSource {
-  name: String
-  sourceType: String
-  producerName: String
-  harvestYear: Int
-  country: Country
-  origin: Origin
-  community: String
-}
-
-type CoffeeComponent {
-  roastedCoffee: RoastedCoffee!
-  greenCoffee: GreenCoffee
-  origin: Origin
-  process: String
-  fraction: Float
+  # roasters(filter: Filter): [Roaster]!
 }
