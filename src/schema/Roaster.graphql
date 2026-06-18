@@ -1,0 +1,34 @@
+type Roaster {
+  id: ID!
+  name: String!
+  location: Location
+  equipment: RoastingEquipment
+  details: JSON
+
+  roastedCoffees: [RoastedCoffee]!
+}
+
+input RoasterInput {
+  name: String
+  location: LocationInput
+  equipment: RoastingEquipmentInput
+  details: JSON
+}
+
+input RoastingEquipmentInput {
+  brand: String
+  model: String
+  capacity: Float
+}
+
+type RoasterMutationResult {
+  status: Boolean!
+  error: Error
+  roaster: Roaster
+}
+
+type RoastingEquipment {
+  brand: String
+  model: String
+  capacity: Float
+}

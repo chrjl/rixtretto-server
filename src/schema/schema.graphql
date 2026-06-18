@@ -10,6 +10,8 @@ type Query {
 }
 
 type Mutation {
+  roasterCreate(input: RoasterInput!): RoasterMutationResult!
+  roasterUpdate(id: ID, input: RoasterInput!): RoasterMutationResult!
 }
 
 type Error {
@@ -65,22 +67,6 @@ input Filter {
   name: NameFilter
   location: LocationFilter
   coffeeDetail: CoffeeFilter
-}
-
-type Roaster {
-  id: ID!
-  name: String!
-  location: Location
-  equipment: RoastingEquipment
-  details: JSON
-
-  roastedCoffees: [RoastedCoffee]!
-}
-
-type RoastingEquipment {
-  brand: String
-  model: String
-  capacity: Float
 }
 
 type Country {
