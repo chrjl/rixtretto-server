@@ -22,7 +22,7 @@ elif os.path.exists(".env"):
     load_dotenv(".env")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="module")
 def engine(request):
     use_sample_data = request.node.get_closest_marker("use_sample_data")
     echo_marker = request.node.get_closest_marker("echo")
@@ -74,6 +74,6 @@ def engine(request):
     models.Base.metadata.drop_all(engine)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="module")
 def client(engine):
     return TestClient(app(engine))
