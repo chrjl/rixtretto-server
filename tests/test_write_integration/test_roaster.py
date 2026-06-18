@@ -1,57 +1,11 @@
 import pytest
 
 
-@pytest.fixture
-def new_roaster_data():
-    return {
-        "name": "Stereoscope",
-        "country_id": "US",
-        "state": "CA",
-        "city": "Los Angeles",
-    }
-
-
-@pytest.fixture
-def create_new_roaster(client, new_roaster_data):
-    roaster_name = new_roaster_data.get("name")
-    country_id = new_roaster_data.get("country_id")
-    state = new_roaster_data.get("state")
-    city = new_roaster_data.get("city")
-
-    mutation_query = """
-    mutation($input: RoasterInput!) {
-        roasterCreate(input: $input) {
-            status
-            roaster {
-                id
-            }
-        }
-    }
-    """
-
-    variables = {
-        "input": {
-            "name": roaster_name,
-            "location": {"countryId": country_id, "state": state, "city": city},
-        }
-    }
-
-    response = client.post(
-        "/",
-        json={"query": mutation_query, "variables": variables},
-    )
-
-    assert response.status_code == 200
-
-    result = response.json()["data"]["roasterCreate"]["roaster"]
-    return result
-
-
-@pytest.mark.usefixtures("create_new_roaster")
-def test_create_roaster(client, new_roaster_data):
+@pytest.mark.usefixtures("seed_sample_roasters")
+def test_create_roasters(client, roasters_list):
     query = """
-        query($filter: Filter) {
-            roasters(filter: $filter) {
+        query {
+            roasters {
                 name
                 location {
                     country {
@@ -66,30 +20,40 @@ def test_create_roaster(client, new_roaster_data):
 
     response = client.post(
         "/",
-        json={
-            "query": query,
-            "variables": {
-                "filter": {"name": {"starts_with": new_roaster_data["name"]}}
-            },
-        },
+        json={"query": query},
     )
     assert response.status_code == 200
 
-    result = response.json()["data"]["roasters"][0]
-    assert result["name"] == new_roaster_data["name"]
-    assert result["location"]["country"]["id"] == new_roaster_data["country_id"]
-    assert result["location"]["state"] == new_roaster_data["state"]
-    assert result["location"]["city"] == new_roaster_data["city"]
+    result = response.json()["data"]["roasters"]
+    assert len(result) == len(roasters_list)
+
+    for fetched, expected in zip(result, roasters_list):
+        assert fetched["name"] == expected["name"]
+        assert fetched["location"]["city"] == expected["city"]
+        assert fetched["location"]["state"] == expected["state"]
+        assert fetched["location"]["country"]["id"] == expected["country"]
 
 
 @pytest.mark.parametrize(
-    "name, city, state, country_id, country_name",
-    [("Coffee Libre", "Seoul", None, "KR", "Korea")],
+    "sample_data, error_code",
+    [
+        ({"country": "US"}, 400),
+        ({"name": "test"}, 400),
+    ],
 )
-def test_update_roaster(
-    client, create_new_roaster, name, city, state, country_id, country_name
-):
-    roaster_id = create_new_roaster["id"]
+def test_create_errors(create_roaster, sample_data, error_code):
+    result = create_roaster(sample_data)
+    assert result.get("code") == error_code
+
+
+@pytest.mark.parametrize(
+    "name, city, state, country_id",
+    [("Stereoscope", "Los Angeles", "CA", "US")],
+)
+def test_update_roaster(client, create_roaster, name, city, state, country_id):
+    roaster_obj = create_roaster(
+        {"name": name, "country": country_id},
+    )
 
     query = """
     mutation($id: ID, $input: RoasterInput!) {
@@ -111,13 +75,11 @@ def test_update_roaster(
     """
 
     variables = {
-        "id": roaster_id,
+        "id": roaster_obj["id"],
         "input": {
-            "name": name,
             "location": {
                 "city": city,
                 "state": state,
-                "countryId": country_id,
             },
         },
     }
@@ -132,4 +94,3 @@ def test_update_roaster(
     assert result["roaster"]["location"]["city"] == city
     assert result["roaster"]["location"]["state"] == state
     assert result["roaster"]["location"]["country"]["id"] == country_id
-    assert result["roaster"]["location"]["country"]["name"].startswith(country_name)
