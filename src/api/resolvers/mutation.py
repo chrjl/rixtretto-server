@@ -9,10 +9,37 @@ mutation_type = MutationType()
 
 @mutation_type.field("roasterCreate")
 def resolve_roaster_create(_, info, input):
+    if input.get("name") is None:
+        return {
+            "status": False,
+            "error": {"code": 400, "message": "Missing required field `name`"},
+        }
+
+    if (
+        ("location" not in input)
+        or ("country_id" not in input["location"])
+        or (input["location"]["country_id"] is None)
+    ):
+        return {
+            "status": False,
+            "error": {
+                "code": 400,
+                "message": "Missing required field `location.countryId`",
+            },
+        }
+
+    try:
+        normalized_input = normalized_roaster_input(input)
+    except:
+        return {
+            "status": False,
+            "error": {"code": 400, "message": "Bad Request"},
+        }
+
     Session = info.context["Session"]
 
     with Session() as session:
-        roaster = models.Roaster(**normalized_roaster_input(input))
+        roaster = models.Roaster(**normalized_input)
         session.add(roaster)
 
         session.commit()
@@ -24,6 +51,25 @@ def resolve_roaster_create(_, info, input):
 @mutation_type.field("roasterUpdate")
 def resolve_roaster_update(_, info, id, input):
     Session = info.context["Session"]
+
+    if "name" in input and input["name"] is None:
+        return {
+            "status": False,
+            "error": {"code": 400, "message": "Cannot unset required field `name`"},
+        }
+
+    if "location" in input:
+        if input["location"] is None or (
+            "country_id" in input["location"]
+            and input["location"]["country_id"] is None
+        ):
+            return {
+                "status": False,
+                "error": {
+                    "code": 400,
+                    "message": "Cannot unset required field `location.countryId`",
+                },
+            }
 
     with Session() as session:
         roaster = session.get(models.Roaster, id)
