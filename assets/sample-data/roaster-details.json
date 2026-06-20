@@ -1,0 +1,51 @@
+[
+  {
+    "name": "Christopher L",
+    "details": {
+      "website": "https://chrjl.dev",
+      "profiles": [
+        {
+          "network": "github",
+          "handle": "chrjl",
+          "url": "https://github.com/chrjl"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Go Get Em Tiger",
+    "details": {
+      "website": "https://gget.com",
+      "profiles": [
+        {
+          "network": "facebook",
+          "handle": "ggetla",
+          "url": "https://facebook.com/ggetla"
+        },
+        {
+          "network": "instagram",
+          "handle": "ggetla",
+          "url": "https://instagram.com/ggetla"
+        }
+      ],
+      "locations": [
+        {
+          "name": "Grand Central Market",
+          "type": "coffeebar",
+          "address": "317 S Broadway",
+          "city": "Los Angeles",
+          "state": "CA",
+          "zipcode": 90013
+        },
+        {
+          "name": "Larchmont Village",
+          "type": "coffeebar",
+          "address": "230 N Larchmont",
+          "city": "Los Angeles",
+          "state": "CA",
+          "zipcode": 90004
+        }
+      ]
+    }
+  }
+]
