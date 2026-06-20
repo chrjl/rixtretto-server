@@ -112,16 +112,23 @@ class Roaster(Base):
     }
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str]
+    _name: Mapped[str] = mapped_column("name")
     _name_n: Mapped[str] = mapped_column(
         comment="`name` column normalized to remove case and accents",
         default=lambda context: normalized_text(
             context.get_current_parameters()["name"]
         ),
-        onupdate=lambda context: normalized_text(
-            context.get_current_parameters()["name"]
-        ),
     )
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        self._name_n = normalized_text(value)
+        self._name = value
+
     city: Mapped[str | None]
     state: Mapped[str | None]
     country: Mapped[str] = mapped_column(
@@ -191,16 +198,23 @@ class RoastedCoffee(Base):
     }
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str]
+    _name: Mapped[str] = mapped_column("name")
     _name_n: Mapped[str] = mapped_column(
         comment="`name` column normalized to remove case and accents",
         default=lambda context: normalized_text(
             context.get_current_parameters()["name"]
         ),
-        onupdate=lambda context: normalized_text(
-            context.get_current_parameters()["name"]
-        ),
     )
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        self._name = value
+        self._name_n = normalized_text(value)
+
     roaster_id: Mapped[int] = mapped_column(ForeignKey("roasters.id"))
     prices: Mapped[list[dict]] = mapped_column(server_default="[]")
     date_added: Mapped[datetime] = mapped_column(server_default=func.now())
@@ -288,16 +302,23 @@ class Origin(Base):
     __table_args__ = {"comment": "Data attributed to Cafe Imports."}
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str]
+    _name: Mapped[str] = mapped_column("name")
     _name_n: Mapped[str] = mapped_column(
         comment="`name` column normalized to remove case and accents",
         default=lambda context: normalized_text(
             context.get_current_parameters()["name"]
         ),
-        onupdate=lambda context: normalized_text(
-            context.get_current_parameters()["name"]
-        ),
     )
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        self._name = value
+        self._name_n = normalized_text(value)
+
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("origins.id"))
     country_id: Mapped[str] = mapped_column(ForeignKey("countries.id"))
     processes: Mapped[list[str] | None] = mapped_column(server_default="[]")
@@ -409,18 +430,26 @@ class GreenCoffee(Base):
     __tablename__ = "green_coffees"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(
-        comment="Green coffees without an assigned name refer to generic/unknown coffee of the specified region."
+    _name: Mapped[str] = mapped_column(
+        "name",
+        comment="Green coffees without an assigned name refer to generic/unknown coffee of the specified region.",
     )
     _name_n: Mapped[str] = mapped_column(
         comment="`name` column normalized to remove case and accents",
         default=lambda context: normalized_text(
             context.get_current_parameters()["name"]
         ),
-        onupdate=lambda context: normalized_text(
-            context.get_current_parameters()["name"]
-        ),
     )
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        self._name = value
+        self._name_n = normalized_text(value)
+
     origin_id: Mapped[int] = mapped_column(ForeignKey("origins.id"))
 
     source: Mapped[str | None] = mapped_column(
