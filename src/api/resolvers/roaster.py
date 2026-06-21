@@ -4,13 +4,18 @@ from ariadne import ObjectType
 
 from .mutation import mutation_type
 from db import models
-from schema.normalized_types.roaster import normalized_roaster_input
+from api.types import normalized_roaster_input
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ariadne.types import GraphQLResolveInfo
 
 roaster = ObjectType("Roaster")
 
 
 @roaster.field("location")
-def resolve_roaster_location(roaster, info):
+def resolve_roaster_location(roaster: models.Roaster, info: GraphQLResolveInfo):
     Session = info.context["Session"]
 
     with Session() as session:
@@ -24,7 +29,7 @@ def resolve_roaster_location(roaster, info):
 
 
 @roaster.field("equipment")
-def resolve_roaster_equipment(roaster, _info):
+def resolve_roaster_equipment(roaster: models.Roaster, _info):
     return {
         "brand": roaster.equipment_brand,
         "model": roaster.equipment_model,
@@ -33,7 +38,7 @@ def resolve_roaster_equipment(roaster, _info):
 
 
 @mutation_type.field("roasterCreate")
-def resolve_roaster_create(_, info, input):
+def resolve_roaster_create(_, info: GraphQLResolveInfo, input):
     if input.get("name") is None:
         return {
             "status": False,

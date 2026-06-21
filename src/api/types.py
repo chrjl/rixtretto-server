@@ -2,6 +2,25 @@ import json
 from typing import TypedDict
 
 
+class LocationInput(TypedDict, total=False):
+    city: str | None
+    state: str | None
+    country_id: str | None
+
+
+class RoastingEquipmentInput(TypedDict, total=False):
+    brand: str | None
+    model: str | None
+    capacity: float | None
+
+
+class RoasterInput(TypedDict, total=False):
+    name: str | None
+    location: LocationInput | None
+    equipment: RoastingEquipmentInput | None
+    details: str | None
+
+
 class RoasterColumns(TypedDict, total=False):
     name: str | None
     city: str | None
@@ -13,7 +32,7 @@ class RoasterColumns(TypedDict, total=False):
     details: dict | None
 
 
-def normalized_roaster_input(input: dict) -> RoasterColumns:
+def normalized_roaster_input(input: RoasterInput) -> RoasterColumns:
     data = RoasterColumns()
 
     if name := input.get("name"):
@@ -34,7 +53,7 @@ def normalized_roaster_input(input: dict) -> RoasterColumns:
             data["equipment_model"] = equipment["model"]
         if "capacity" in equipment:
             data["equipment_capacity"] = equipment["capacity"]
-    
+
     if details := input.get("details"):
         data["details"] = json.loads(details)
 
