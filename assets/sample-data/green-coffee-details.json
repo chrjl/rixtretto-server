@@ -1,0 +1,68 @@
+[
+  {
+    "name": "Privam Estate AA Week 23",
+    "details": {
+      "harvest_year": 2024,
+      "supplier": "Showroom Coffee",
+      "description": "Cherries are handpicked and floated to separate by color and density, then pulped and sorted through washing channels into fermentation tanks, where they sit overnight before more washing and 10-14 days of drying on raised beds.",
+      "references": [
+        {
+          "type": "website",
+          "url": "https://www.croptocup.com/community/privam-estate/"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Tariku Kare",
+    "details": {
+      "harvest_year": 2024,
+      "supplier": "Showroom Coffee",
+      "description": "Cherries are centrally processed at Refisa W.S., using single fermentation for 24 hrs and raised bed drying for 8-12 days. ",
+      "references": [
+        {
+          "type": "website",
+          "url": "https://www.croptocup.com/community/tariku-kare/"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Dukorere Kawa Anaerobic Lot 10",
+    "details": {
+      "harvest_year": 2025,
+      "supplier": "Showroom Coffee",
+      "references": [
+        {
+          "type": "website",
+          "url": "https://showroomcoffee.com/product/dukorere-kawa-bukure-nova-washing-station-anaerobic-lot-10/"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Salomon Estela Marshell Natural K56",
+    "details": {
+      "harvest_year": 2025,
+      "producer_name": "Salomon Estela",
+      "supplier": "Showroom Coffee",
+      "references": [
+        {
+          "type": "website",
+          "url": "https://showroomcoffee.com/product/salomon-estela-el-pino-marshell-natural-k56/"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Placer de la Tarde",
+    "details": {
+      "references": [
+        {
+          "type": "website",
+          "url": "https://gget.com/collections/current-menu/products/placer-de-la-tarde-colombia-decaf"
+        }
+      ]
+    }
+  }
+]
