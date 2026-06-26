@@ -3,10 +3,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypedDict
 from ariadne import ObjectType
 
-from db import queries
+from db import models, queries
+from api.types import (
+    GreenCoffeeInput,
+    normalized_green_coffee_input,
+    normalized_green_coffee_tags,
+)
+from .mutation import mutation_type
 
 if TYPE_CHECKING:
-    from db import models
     from ariadne.types import GraphQLResolveInfo
 
 
@@ -102,3 +107,60 @@ def resolve_green_coffee_associations(
         return session.scalars(
             queries.GreenCoffee(green_coffee.id).get("associations")
         ).all()
+
+
+@mutation_type.field("greenCoffeeCreate")
+def resolve_green_coffee_create(_, info: GraphQLResolveInfo, input: GreenCoffeeInput):
+    Session = info.context["Session"]
+
+    if input.get("name") is None:
+        return {
+            "status": False,
+            "error": {"code": 400, "message": "Missing required field `name`"},
+        }
+
+    normalized_input = normalized_green_coffee_input(input)
+    normalized_tags = normalized_green_coffee_tags(input)
+
+    with Session() as session:
+        green_coffee = models.GreenCoffee(**normalized_input)
+
+        for tag_data in normalized_tags:
+            green_coffee.tags.append(models.GreenCoffeeTag(**tag_data))
+
+        session.add(green_coffee)
+
+        session.commit()
+        session.refresh(green_coffee)
+
+    return {"status": True, "green_coffee": green_coffee}
+
+
+@mutation_type.field("greenCoffeeUpdate")
+def resolve_green_coffee_update(
+    _, info: GraphQLResolveInfo, id: int, input: GreenCoffeeInput
+):
+    Session = info.context["Session"]
+
+    with Session() as session:
+        green_coffee = session.get(models.GreenCoffee, id)
+
+        for key, value in normalized_green_coffee_input(input).items():
+            setattr(green_coffee, key, value)
+
+        # clear tag entries
+        updated_tags = normalized_green_coffee_tags(input)
+        updated_tag_types = set([tag["type"] for tag in updated_tags])
+
+        for tag_obj in green_coffee.tags:
+            if tag_obj.type in updated_tag_types:
+                session.delete(tag_obj)
+
+        # write new tags
+        for tag_data in updated_tags:
+            green_coffee.tags.append(models.GreenCoffeeTag(**tag_data))
+
+        session.commit()
+        session.refresh(green_coffee)
+
+    return {"status": True, "green_coffee": green_coffee}
