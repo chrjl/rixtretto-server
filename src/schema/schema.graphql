@@ -12,6 +12,11 @@ type Query {
 type Mutation {
   roasterCreate(input: RoasterInput!): RoasterMutationResult!
   roasterUpdate(id: ID, input: RoasterInput!): RoasterMutationResult!
+  greenCoffeeCreate(input: GreenCoffeeInput!): GreenCoffeeMutationResult!
+  greenCoffeeUpdate(
+    id: ID
+    input: GreenCoffeeInput!
+  ): GreenCoffeeMutationResult!
 }
 
 type Error {
@@ -115,30 +120,6 @@ type RoastedCoffee {
   varieties: [String]!
   tasting: [String]!
   components: [CoffeeComponent]!
-}
-
-type GreenCoffee {
-  id: ID!
-  name: String
-  source: GreenCoffeeSource
-  details: JSON
-
-  origins: [Origin]!
-  processes: [String]!
-  varieties: [String]!
-  tasting: [String]!
-  associations: [CoffeeComponent]!
-  roasters: [Roaster]!
-}
-
-type GreenCoffeeSource {
-  name: String
-  sourceType: String
-  producerName: String
-  harvestYear: Int
-  country: Country
-  origin: Origin
-  community: String
 }
 
 type CoffeeComponent {
