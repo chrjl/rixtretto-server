@@ -14,6 +14,8 @@ from .mutation import mutation_type
 if TYPE_CHECKING:
     from ariadne.types import GraphQLResolveInfo
 
+SUPPORTED_TAG_TYPES = ["process", "variety", "tasting"]
+
 
 class GreenCoffeeSource(TypedDict, total=False):
     name: str | None
@@ -152,9 +154,8 @@ def resolve_green_coffee_update(
         updated_tags = normalized_green_coffee_tags(input)
         updated_tag_types = set([tag["type"] for tag in updated_tags])
 
-        for tag_obj in green_coffee.tags:
-            if tag_obj.type in updated_tag_types:
-                session.delete(tag_obj)
+        for tag_type in updated_tag_types:
+            session.execute(queries.GreenCoffee().clear_tag(green_id=id, type=tag_type))
 
         # write new tags
         for tag_data in updated_tags:
@@ -162,5 +163,54 @@ def resolve_green_coffee_update(
 
         session.commit()
         session.refresh(green_coffee)
+
+    return {"status": True, "green_coffee": green_coffee}
+
+
+@mutation_type.field("greenCoffeeTagAdd")
+def resolve_green_coffee_tag_add(
+    _, info: GraphQLResolveInfo, id: int, type: str, values: list[str]
+):
+    Session = info.context["Session"]
+
+    if type not in SUPPORTED_TAG_TYPES:
+        return {
+            "status": False,
+            "error": {"code": 400, "message": f"Unsupported tag type `{type}`"},
+        }
+
+    with Session() as session:
+        for value in values:
+            session.add(models.GreenCoffeeTag(green_id=id, type=type, value=value))
+
+        session.commit()
+        green_coffee = session.get(models.GreenCoffee, id)
+
+    return {"status": True, "green_coffee": green_coffee}
+
+
+@mutation_type.field("greenCoffeeTagDelete")
+def resolve_green_coffee_tag_delete(
+    _, info: GraphQLResolveInfo, id: int, type: str, values: list[str] | None = None
+):
+    Session = info.context["Session"]
+
+    if type not in SUPPORTED_TAG_TYPES:
+        return {
+            "status": False,
+            "error": {"code": 400, "message": f"Unsupported tag type `{type}`"},
+        }
+
+    with Session() as session:
+        if values is None:
+            session.execute(queries.GreenCoffee().clear_tag(green_id=id, type=type))
+
+        else:
+            session.execute(
+                queries.GreenCoffee().delete_tags(green_id=id, type=type, values=values)
+            )
+
+        session.commit()
+        green_coffee = session.get(models.GreenCoffee, id)
 
     return {"status": True, "green_coffee": green_coffee}

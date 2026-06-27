@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select, join, and_, func
+from sqlalchemy import select, delete, join, and_, func
 from .base import Base
 from db import models
 from db.queries.component_associations import CoffeeComponent
@@ -48,6 +48,19 @@ class GreenCoffee(Base[models.GreenCoffee]):
     def filter_by_tasting(self, tasting_notes: list[str] = []) -> Self:
         self.filter_by_tag("tasting", tasting_notes)
         return self
+
+    def clear_tag(self, green_id: int, type: str):
+        return delete(models.GreenCoffeeTag).where(
+            models.GreenCoffeeTag.green_id == green_id,
+            models.GreenCoffeeTag.type == type,
+        )
+
+    def delete_tags(self, green_id: int, type: str, values: list[str]):
+        return delete(models.GreenCoffeeTag).where(
+            models.GreenCoffeeTag.green_id == green_id,
+            models.GreenCoffeeTag.type == type,
+            models.GreenCoffeeTag.value.in_(values),
+        )
 
     def origins(self) -> Select[tuple[models.Origin]]:
         return (
