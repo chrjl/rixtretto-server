@@ -17,6 +17,16 @@ type Mutation {
     id: ID
     input: GreenCoffeeInput!
   ): GreenCoffeeMutationResult!
+  greenCoffeeTagAdd(
+    id: ID!
+    type: String!
+    values: [String]!
+  ): GreenCoffeeMutationResult!
+  greenCoffeeTagDelete(
+    id: ID!
+    type: String!
+    values: [String]
+  ): GreenCoffeeMutationResult!
 }
 
 type Error {
