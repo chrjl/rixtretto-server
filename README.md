@@ -1,4 +1,4 @@
-# Dobleshot server
+# Rixtretto server
 
 A GraphQL API &times; SQL backend for a coffee experience-centered social networking app.
 

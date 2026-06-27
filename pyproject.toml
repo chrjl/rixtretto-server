@@ -1,5 +1,5 @@
 [project]
-name = "dobleshot-server"
+name = "rixtretto-server"
 version = "0.0.0"
 dependencies = [
   "python-dotenv >= 1.2.2",

@@ -1,4 +1,4 @@
-name: dobleshot-server
+name: rixtretto-server
 
 services:
   db:
