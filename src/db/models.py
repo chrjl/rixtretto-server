@@ -6,6 +6,7 @@ from sqlalchemy.orm import (
     relationship,
     column_property,
 )
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.mutable import MutableList, MutableDict
@@ -45,7 +46,6 @@ def representation(title: str, fields: dict[str, Any]) -> str:
 
 
 class Base(DeclarativeBase):
-    id = mapped_column("id", String)
     type_annotation_map = {
         list[str]: MutableList.as_mutable(JSON),
         list[dict]: MutableList.as_mutable(JSON),
@@ -120,12 +120,12 @@ class Roaster(Base):
         ),
     )
 
-    @property
+    @hybrid_property
     def name(self) -> str:
         return self._name
 
-    @name.setter
-    def name(self, value: str):
+    @name.inplace.setter
+    def name_setter(self, value: str):
         self._name_n = normalized_text(value)
         self._name = value
 
@@ -206,12 +206,12 @@ class RoastedCoffee(Base):
         ),
     )
 
-    @property
+    @hybrid_property
     def name(self) -> str:
         return self._name
 
-    @name.setter
-    def name(self, value: str) -> None:
+    @name.inplace.setter
+    def name_setter(self, value: str) -> None:
         self._name = value
         self._name_n = normalized_text(value)
 
@@ -310,12 +310,12 @@ class Origin(Base):
         ),
     )
 
-    @property
+    @hybrid_property
     def name(self) -> str:
         return self._name
 
-    @name.setter
-    def name(self, value: str) -> None:
+    @name.inplace.setter
+    def name_setter(self, value: str) -> None:
         self._name = value
         self._name_n = normalized_text(value)
 
@@ -441,12 +441,12 @@ class GreenCoffee(Base):
         ),
     )
 
-    @property
+    @hybrid_property
     def name(self) -> str:
         return self._name
 
-    @name.setter
-    def name(self, value: str) -> None:
+    @name.inplace.setter
+    def name_setter(self, value: str) -> None:
         self._name = value
         self._name_n = normalized_text(value)
 
