@@ -164,11 +164,13 @@ def upgrade() -> None:
     # Refactor green_coffees × roasted_coffee_components
     # Refactor anonymous green coffees into origin_id × process in components table
     # Remove anonymous green coffees from green_coffees table
+    op.drop_constraint("roasted_coffee_components_pkey", "roasted_coffee_components")
     op.add_column(
         "roasted_coffee_components",
-        sa.Column("id", sa.Integer, autoincrement=True, nullable=False),
+        sa.Column(
+            "id", sa.Integer, primary_key=True, autoincrement=True, nullable=False
+        ),
     )
-    op.drop_constraint("roasted_coffee_components_pkey", "roasted_coffee_components")
     op.create_primary_key(
         "roasted_coffee_components_pkey", "roasted_coffee_components", ["id"]
     )
@@ -354,15 +356,15 @@ def downgrade() -> None:
     op.alter_column(
         "roasted_coffee_components", "green_id", existing_nullable=True, nullable=False
     )
+    op.drop_column("roasted_coffee_components", "id")
+    op.drop_column("roasted_coffee_components", "process")
+    op.drop_column("roasted_coffee_components", "origin_id")
+    op.drop_column("roasted_coffee_components", "details")
     op.create_primary_key(
         "roasted_coffee_components_pkey",
         "roasted_coffee_components",
         ["roasted_id", "green_id"],
     )
-    op.drop_column("roasted_coffee_components", "id")
-    op.drop_column("roasted_coffee_components", "process")
-    op.drop_column("roasted_coffee_components", "origin_id")
-    op.drop_column("roasted_coffee_components", "details")
 
     # Remove the new origin model from green_coffees
     op.drop_column("green_coffees", "origin_id")
