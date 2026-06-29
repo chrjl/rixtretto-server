@@ -1,44 +1,30 @@
 import csv, json
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
-from db import models
-from db.main import engine
-
 from . import SAMPLE_DATA_DIR
 
 
 def green_coffee_data(path):
-    simple_columns = ["name", "source", "source_type", "origin_name", "community"]
     list_columns = ["processes", "varieties", "tasting"]
-    csvdata = []
-
-    with open(path + "green-coffee.csv") as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            row_data = {}
-
-            for column in simple_columns:
-                row_data[column] = row[column]
-            for column in list_columns:
-                row_data[column] = row[column].split(";") if row.get(column) else []
-
-            csvdata.append(row_data)
+    result = []
+    details_lookup = {}
 
     with open(path + "green-coffee-details.json") as jsonfile:
         jsondata = json.load(jsonfile)
 
-    lookup = {row["name"]: row for row in csvdata}
-
     for row in jsondata:
-        name = row["name"]
+        details_lookup[row["name"]] = row["details"]
 
-        if name in lookup:
-            lookup[name]["details"] = row["details"]
-        else:
-            lookup[name] = {"details": row["details"]}
+    with open(path + "green-coffee.csv") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            for column in list_columns:
+                row[column] = row[column].split(";") if row.get(column) else []
 
-    return [*lookup.values()]
+            if (name := row["name"]) in details_lookup:
+                row["details"] = details_lookup[name]
+
+            result.append(row)
+
+    return result
 
 
 def sample_green_coffee_data():
@@ -46,18 +32,22 @@ def sample_green_coffee_data():
 
 
 def sample_green_coffee_objects(engine):
+    from sqlalchemy import select
+    from sqlalchemy.orm import Session
+    from db.models import Origin, GreenCoffee, GreenCoffeeTag
+
     green_coffee_objs = []
 
     for green_coffee in sample_green_coffee_data():
         if origin_name := green_coffee.get("origin_name"):
-            query = select(models.Origin.id).where(models.Origin._name == origin_name)
+            query = select(Origin.id).where(Origin._name == origin_name)
 
             with Session(engine) as session:
                 origin_id = session.scalar(query)
         else:
             origin_id = None
 
-        green_coffee_obj = models.GreenCoffee(
+        green_coffee_obj = GreenCoffee(
             name=green_coffee["name"],
             origin_id=origin_id,
             source=green_coffee.get("source"),
@@ -66,19 +56,13 @@ def sample_green_coffee_objects(engine):
         )
 
         for process in green_coffee.get("processes", []):
-            green_coffee_obj.tags.append(
-                models.GreenCoffeeTag(type="process", value=process)
-            )
+            green_coffee_obj.tags.append(GreenCoffeeTag(type="process", value=process))
 
         for variety in green_coffee.get("varieties", []):
-            green_coffee_obj.tags.append(
-                models.GreenCoffeeTag(type="variety", value=variety)
-            )
+            green_coffee_obj.tags.append(GreenCoffeeTag(type="variety", value=variety))
 
         for tasting in green_coffee.get("tasting", []):
-            green_coffee_obj.tags.append(
-                models.GreenCoffeeTag(type="tasting", value=tasting)
-            )
+            green_coffee_obj.tags.append(GreenCoffeeTag(type="tasting", value=tasting))
 
         green_coffee_objs.append(green_coffee_obj)
 
@@ -86,7 +70,10 @@ def sample_green_coffee_objects(engine):
 
 
 if __name__ == "__main__":
-    result = sample_green_coffee_objects(engine)
+    from sqlalchemy.orm import Session
+    from db.main import engine
 
-    for green_coffee_obj in result:
-        print(green_coffee_obj, *green_coffee_obj.tags)
+    with Session(engine) as session:
+        for green_coffee_obj in sample_green_coffee_objects(engine):
+            session.add(green_coffee_obj)
+            session.commit()

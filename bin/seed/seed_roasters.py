@@ -1,28 +1,30 @@
 import csv, json
 from . import SAMPLE_DATA_DIR
 
-from db.models import Roaster
-
 
 def roaster_data(path):
-    with open(path + "roasters.csv") as csvfile:
-        reader = csv.DictReader(csvfile)
-        csvdata = [*reader]
+    result = []
+    details_lookup = {}
 
     with open(path + "roaster-details.json") as jsonfile:
         jsondata = json.load(jsonfile)
 
-    lookup = {row["name"]: row for row in csvdata}
-
     for row in jsondata:
-        name = row["name"]
+        details_lookup[row["name"]] = row["details"]
 
-        if name in lookup:
-            lookup[name]["details"] = row["details"]
-        else:
-            lookup[name] = {"details": row["details"]}
+    with open(path + "roasters.csv") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            if (name := row["name"]) in details_lookup:
+                row["details"] = details_lookup[name]
 
-    return [*lookup.values()]
+            row["equipment_capacity"] = (
+                float(row["equipment_capacity"]) if row["equipment_capacity"] else None
+            )
+
+            result.append(row)
+
+    return result
 
 
 def sample_roaster_data():
@@ -30,8 +32,15 @@ def sample_roaster_data():
 
 
 def sample_roaster_objects():
+    from db.models import Roaster
+
     return [Roaster(**row) for row in sample_roaster_data()]
 
 
 if __name__ == "__main__":
-    print(sample_roaster_objects())
+    from sqlalchemy.orm import Session
+    from db.main import engine
+
+    with Session(engine) as session:
+        session.add_all(sample_roaster_objects())
+        session.commit()
