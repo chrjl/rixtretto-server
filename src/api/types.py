@@ -1,6 +1,13 @@
 import json
 from typing import TypedDict, Required
 
+from db import models
+
+
+class Error(TypedDict):
+    code: int
+    message: str
+
 
 class LocationInput(TypedDict, total=False):
     city: str | None
@@ -141,3 +148,24 @@ def normalized_green_coffee_tags(
             data.append(GreenCoffeeTagsColumns(type="tasting", value=tasting_note))
 
     return data
+
+
+class RoastedCoffeeInput(TypedDict, total=False):
+    name: str | None
+    roaster_id: int | None
+    date_added: str | None
+    date_removed: str | None
+    profiles: list[str]
+    tasting: list[str]
+
+
+class RoastedCoffeeMutationResult(TypedDict, total=False):
+    status: Required[bool]
+    error: Error | None
+    roasted_coffee: models.RoastedCoffee | None
+
+
+class CoffeeComponentMutationResult(TypedDict, total=False):
+    status: Required[bool]
+    error: Error | None
+    roasted_coffee: models.CoffeeComponent | None

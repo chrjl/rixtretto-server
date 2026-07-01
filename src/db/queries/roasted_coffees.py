@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select, join, func, and_, or_
+from sqlalchemy import select, delete, join, func, and_, or_
 from .base import Base
 from db import models
 from db.queries.component_associations import CoffeeComponent
@@ -109,6 +109,19 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
 
         return self
 
+    def clear_tag(self, roasted_id: int, type: str):
+        return delete(models.RoastedCoffeeTag).where(
+            models.RoastedCoffeeTag.roasted_id == roasted_id,
+            models.RoastedCoffeeTag.type == type,
+        )
+
+    def delete_tags(self, roasted_id: int, type: str, values: list[str]):
+        return delete(models.RoastedCoffeeTag).where(
+            models.RoastedCoffeeTag.roasted_id == roasted_id,
+            models.RoastedCoffeeTag.type == type,
+            models.RoastedCoffeeTag.value.in_(values),
+        )
+
     def origins(self) -> Select[tuple[models.Origin]]:
         """List of `Origin` objects of components of a `RoastedCoffee`.
 
@@ -198,4 +211,3 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
             models.CoffeeComponent.roasted_id.in_(self.select(["id"]))
         )
         return CoffeeComponent().filter_by_roasted_coffee(self.select(["id"])).select()
-
