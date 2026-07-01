@@ -1,8 +1,13 @@
 import pytest
 import json
+from datetime import datetime
 
 from bin.seed.seed_roasters import sample_roaster_data
 from bin.seed.seed_green_coffees import sample_green_coffee_data
+from bin.seed.seed_roasted_coffees import (
+    sample_roasted_coffee_data,
+    sample_coffee_association_data,
+)
 
 
 @pytest.fixture
@@ -169,3 +174,116 @@ def seed_sample_green_coffees(green_coffees_list, create_green_coffee):
         green_coffee_ids.append(new_green_coffee["id"])
 
     return green_coffee_ids
+
+
+@pytest.fixture
+def roasted_coffees_list():
+    return sample_roasted_coffee_data()
+
+
+@pytest.fixture
+def roaster_id(client):
+    def _roaster_id(roaster_name):
+        query = """
+        query($filter: Filter) {
+            roasters(filter: $filter) {
+                id
+            }
+        }
+        """
+
+        variables = {"filter": {"name": {"starts_with": roaster_name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        assert response.status_code == 200
+
+        return response.json()["data"]["roasters"][0]["id"]
+
+    return _roaster_id
+
+
+@pytest.fixture
+def create_roasted_coffee(client, roaster_id):
+    def _create_roasted_coffee(roasted_coffee_data):
+        query = """
+        mutation($input: RoastedCoffeeInput!) {
+            roastedCoffeeCreate(input: $input) {
+                status
+                error {
+                    code
+                    message
+                }
+                roastedCoffee {
+                    id
+                    name
+                    roaster {
+                        id
+                        name
+                    }
+                    dateAdded
+                    dateRemoved
+                    profiles
+                    tasting
+                }
+            }
+        }
+        """
+
+        input = {
+            "name": roasted_coffee_data["name"],
+            "roasterId": roaster_id(roasted_coffee_data["roaster_name"]),
+            "dateAdded": roasted_coffee_data["date_added"],
+            "dateRemoved": roasted_coffee_data["date_removed"],
+            "profiles": roasted_coffee_data.get("profiles", []),
+            "tasting": roasted_coffee_data.get("tasting", []),
+        }
+
+        response = client.post(
+            "/",
+            json={"query": query, "variables": {"input": input}},
+        )
+
+        assert response.status_code == 200
+        result = response.json()["data"]["roastedCoffeeCreate"]
+
+        assert result["roastedCoffee"]["name"] == roasted_coffee_data["name"]
+        assert (
+            result["roastedCoffee"]["roaster"]["name"]
+            == roasted_coffee_data["roaster_name"]
+        )
+
+        if date_added := result["roastedCoffee"]["dateAdded"]:
+            assert datetime.fromisoformat(date_added) == datetime.fromisoformat(
+                roasted_coffee_data["date_added"]
+            )
+        if date_removed := result["roastedCoffee"]["dateRemoved"]:
+            assert datetime.fromisoformat(date_removed) == datetime.fromisoformat(
+                roasted_coffee_data["date_removed"]
+            )
+
+        assert set(result["roastedCoffee"]["profiles"]) == set(
+            roasted_coffee_data.get("profiles", [])
+        )
+        assert set(result["roastedCoffee"]["tasting"]) == set(
+            roasted_coffee_data.get("tasting", [])
+        )
+
+        if result["status"] == True:
+            return result["roastedCoffee"]
+        else:
+            return result["error"]
+
+    return _create_roasted_coffee
+
+
+@pytest.fixture
+def seed_sample_roasted_coffees(
+    seed_sample_roasters, roasted_coffees_list, create_roasted_coffee
+) -> list[int]:
+    roasted_coffee_ids = []
+
+    for coffee in roasted_coffees_list:
+        result = create_roasted_coffee(coffee)
+        roasted_coffee_ids.append(result)
+
+    return roasted_coffee_ids
