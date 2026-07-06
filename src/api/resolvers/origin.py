@@ -70,31 +70,39 @@ def resolve_origin_country(
     return result
 
 
-# TODO
 @origin.field("roastedCoffees")
 def resolve_roasted_coffees_of_origin(
     origin: models.Origin, info: GraphQLResolveInfo
 ) -> Sequence[models.RoastedCoffee]:
     Session = info.context["Session"]
 
-    return []
+    with Session() as session:
+        return session.scalars(
+            queries.Origin().filter_by_ids(ids=[origin.id]).get("roasted_coffees")
+        ).all()
 
 
-# TODO
 @origin.field("greenCoffees")
 def resolve_green_coffees_of_origin(
     origin: models.Origin, info: GraphQLResolveInfo
 ) -> Sequence[models.GreenCoffee]:
     Session = info.context["Session"]
 
-    return []
+    with Session() as session:
+        return session.scalars(
+            queries.Origin().filter_by_ids(ids=[origin.id]).get("green_coffees")
+        ).all()
 
 
-# TODO
 @origin.field("roasters")
 def resolve_roasters_of_origin(
     origin: models.Origin, info: GraphQLResolveInfo
 ) -> Sequence[models.Roaster]:
     Session = info.context["Session"]
 
-    return []
+    with Session() as session:
+        session.add(origin)
+
+        return session.scalars(
+            queries.Origin().filter_by_ids(ids=[origin.id]).get("roasters")
+        ).all()
