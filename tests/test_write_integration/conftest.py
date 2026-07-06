@@ -232,8 +232,8 @@ def create_roasted_coffee(client, roaster_id):
         input = {
             "name": roasted_coffee_data["name"],
             "roasterId": roaster_id(roasted_coffee_data["roaster_name"]),
-            "dateAdded": roasted_coffee_data["date_added"],
-            "dateRemoved": roasted_coffee_data["date_removed"],
+            "dateAdded": roasted_coffee_data.get("date_added"),
+            "dateRemoved": roasted_coffee_data.get("date_removed"),
             "profiles": roasted_coffee_data.get("profiles", []),
             "tasting": roasted_coffee_data.get("tasting", []),
         }
@@ -252,14 +252,14 @@ def create_roasted_coffee(client, roaster_id):
             == roasted_coffee_data["roaster_name"]
         )
 
-        if date_added := result["roastedCoffee"]["dateAdded"]:
-            assert datetime.fromisoformat(date_added) == datetime.fromisoformat(
-                roasted_coffee_data["date_added"]
-            )
-        if date_removed := result["roastedCoffee"]["dateRemoved"]:
-            assert datetime.fromisoformat(date_removed) == datetime.fromisoformat(
-                roasted_coffee_data["date_removed"]
-            )
+        if "date_added" in roasted_coffee_data:
+            assert datetime.fromisoformat(
+                result["roastedCoffee"]["dateAdded"]
+            ) == datetime.fromisoformat(roasted_coffee_data["date_added"])
+        if "date_removed" in roasted_coffee_data:
+            assert datetime.fromisoformat(
+                result["roastedCoffee"]["dateRemoved"]
+            ) == datetime.fromisoformat(roasted_coffee_data["date_removed"])
 
         assert set(result["roastedCoffee"]["profiles"]) == set(
             roasted_coffee_data.get("profiles", [])
@@ -287,3 +287,55 @@ def seed_sample_roasted_coffees(
         roasted_coffee_ids.append(result)
 
     return roasted_coffee_ids
+
+
+@pytest.fixture
+def create_component_association(client):
+    def _create_component_association(
+        roasted_id: int,
+        green_id: int | None = None,
+        origin_id: int | None = None,
+        process: str | None = None,
+        variety: str | None = None,
+    ):
+        query = """
+        mutation($id: ID!, $input: CoffeeComponentInput) {
+            roastedCoffeeComponentAdd(id: $id, input: $input) {
+                roastedCoffee {
+                    id
+                    name
+                    roaster {
+                        id
+                        name
+                    }
+                }
+                greenCoffee {
+                    id
+                    name
+                }
+                origin {
+                    id
+                    name
+                }
+            }
+        }
+        """
+
+        variables = {"id": roasted_id, "input": {}}
+
+        if green_id is not None:
+            variables["input"] = {"green_id": green_id}
+        elif origin_id is not None:
+            variables["input"] = {
+                "origin_id": origin_id,
+                "process": process,
+                "variety": variety,
+            }
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        assert response.status_code == 200
+
+        result = response.json()["data"]["roastedCoffeeComponentAdd"]
+        return result
+
+    return _create_component_association
