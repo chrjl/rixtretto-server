@@ -165,7 +165,17 @@ class RoastedCoffeeMutationResult(TypedDict, total=False):
     roasted_coffee: models.RoastedCoffee | None
 
 
+class CoffeeComponentInput(TypedDict, total=False):
+    green_id: int
+    origin_id: int
+    process: str
+    variety: str
+    fraction: int
+
+
 class CoffeeComponentMutationResult(TypedDict, total=False):
     status: Required[bool]
-    error: Error | None
-    roasted_coffee: models.CoffeeComponent | None
+    error: Error
+    roasted_coffee: models.RoastedCoffee
+    green_coffee: models.GreenCoffee | None
+    origin: models.Origin | None

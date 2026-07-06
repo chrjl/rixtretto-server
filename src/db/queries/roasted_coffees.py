@@ -122,6 +122,30 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
             models.RoastedCoffeeTag.value.in_(values),
         )
 
+    def delete_component(
+        self,
+        roasted_id: int,
+        green_id: int | None = None,
+        origin_id: int | None = None,
+        process: str | None = None,
+        variety: str | None = None,
+    ):
+        if (green_id is not None) and (origin_id is not None):
+            raise ValueError
+
+        if green_id is not None:
+            return delete(models.CoffeeComponent).where(
+                models.CoffeeComponent.roasted_id == roasted_id,
+                models.CoffeeComponent.green_id == green_id,
+            )
+        elif origin_id is not None:
+            return delete(models.CoffeeComponent).where(
+                models.CoffeeComponent.roasted_id == roasted_id,
+                models.CoffeeComponent.origin_id == origin_id,
+                models.CoffeeComponent.process == process,
+                models.CoffeeComponent.variety == variety,
+            )
+
     def origins(self) -> Select[tuple[models.Origin]]:
         """List of `Origin` objects of components of a `RoastedCoffee`.
 
@@ -175,10 +199,10 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
 
         return green_coffee_query.union(generic_component_query)
 
-    def varieties(self) -> Select[tuple[str]]:
+    def varieties(self) -> CompoundSelect[tuple[str]]:
         """Return all varieties of component coffees."""
 
-        return (
+        green_coffee_query = (
             select(models.GreenCoffeeTag.value)
             .select_from(models.RoastedCoffee)
             .join_from(models.RoastedCoffee, models.CoffeeComponent)
@@ -189,6 +213,19 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
                 models.RoastedCoffee.id.in_(self.select(["id"])),
             )
         )
+
+        generic_component_query = (
+            select(models.CoffeeComponent.variety)
+            .distinct()
+            .select_from(models.RoastedCoffee)
+            .join_from(models.RoastedCoffee, models.CoffeeComponent)
+            .where(
+                models.RoastedCoffee.id.in_(self.select(["id"])),
+                models.CoffeeComponent.process.is_not(None),
+            )
+        )
+
+        return green_coffee_query.union(generic_component_query)
 
     def tasting(self) -> Select[tuple[str]]:
         """Return the roaster's provided tasting notes."""

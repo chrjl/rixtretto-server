@@ -9,6 +9,7 @@ from .mutation import mutation_type
 from api.types import (
     RoastedCoffeeInput,
     RoastedCoffeeMutationResult,
+    CoffeeComponentInput,
     CoffeeComponentMutationResult,
 )
 
@@ -319,19 +320,113 @@ def resolve_roasted_coffee_tag_delete(
 def resolve_roasted_coffee_component_add(
     _,
     info: GraphQLResolveInfo,
-    roasted_id: int,
-    green_id: int | None = None,
-    origin_id: int | None = None,
+    id: int,
+    input: CoffeeComponentInput,
 ) -> CoffeeComponentMutationResult:
     Session = info.context["Session"]
+
+    roasted_id = id
+    green_id = input.get("green_id")
+    origin_id = input.get("origin_id")
+    process = input.get("process")
+    variety = input.get("variety")
+    fraction = input.get("fraction")
+
+    if (green_id is None) and (origin_id is None):
+        return {
+            "status": False,
+            "error": {
+                "code": 400,
+                "message": "Missing required parameter: either `greenId` or `originId` must be specified.",
+            },
+        }
+
+    if (green_id is not None) and (origin_id is not None):
+        return {
+            "status": False,
+            "error": {
+                "code": 400,
+                "message": "Too many parameters: only one of either `greenId` or `originId` must be specified.",
+            },
+        }
+
+    with Session() as session:
+        roasted_coffee = session.get(models.RoastedCoffee, roasted_id)
+
+        component_association = models.CoffeeComponent(
+            roasted_id=roasted_id,
+            fraction=fraction,
+        )
+
+        if green_id is not None:
+            component_association.green_id = green_id
+        elif origin_id is not None:
+            component_association.origin_id = origin_id
+            component_association.process = process
+            component_association.variety = variety
+
+        roasted_coffee.component_associations.append(component_association)
+        session.commit()
+
+        session.refresh(roasted_coffee)
+
+        green_coffee = (
+            session.get(models.GreenCoffee, green_id) if green_id is not None else None
+        )
+        origin = (
+            session.get(models.Origin, origin_id) if origin_id is not None else None
+        )
+
+    return {
+        "status": True,
+        "roasted_coffee": roasted_coffee,
+        "green_coffee": green_coffee,
+        "origin": origin,
+    }
 
 
 @mutation_type.field("roastedCoffeeComponentDelete")
 def resolve_roasted_coffee_component_delete(
-    _,
-    info: GraphQLResolveInfo,
-    roasted_id: int,
-    green_id: int | None = None,
-    origin_id: int | None = None,
+    _, info: GraphQLResolveInfo, id: int, input: CoffeeComponentInput
 ) -> CoffeeComponentMutationResult:
     Session = info.context["Session"]
+
+    roasted_id = id
+    green_id = input.get("green_id")
+    origin_id = input.get("origin_id")
+    process = input.get("process")
+    variety = input.get("variety")
+
+    if (green_id is None) and (origin_id is None):
+        return {
+            "status": False,
+            "error": {
+                "code": 400,
+                "message": "Missing required parameter: either `greenId` or `originId` must be specified.",
+            },
+        }
+
+    if (green_id is not None) and (origin_id is not None):
+        return {
+            "status": False,
+            "error": {
+                "code": 400,
+                "message": "Too many parameters: only one of either `greenId` or `originId` must be specified.",
+            },
+        }
+
+    with Session() as session:
+        session.execute(
+            queries.RoastedCoffee().delete_component(
+                roasted_id=roasted_id,
+                green_id=green_id,
+                origin_id=origin_id,
+                process=process,
+                variety=variety,
+            )
+        )
+
+        session.commit()
+        roasted_coffee = session.get(models.RoastedCoffee, roasted_id)
+
+    return {"status": True, "roasted_coffee": roasted_coffee}
