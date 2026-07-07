@@ -70,8 +70,8 @@ class TestRoasterColumns:
             ({"city": "los ang"}, 2),
             ({"city": "san fran"}, 0),
             ({"state": "ca"}, 2),
-            ({"country_code": "us"}, 2),
-            ({"country_name": "united"}, 2),
+            ({"countryId": "us"}, 2),
+            ({"countryName": "united"}, 2),
         ],
     )
     def test_filter_by_location(self, client, filter, count):

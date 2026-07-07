@@ -252,11 +252,11 @@ def create_roasted_coffee(client, roaster_id):
             == roasted_coffee_data["roaster_name"]
         )
 
-        if "date_added" in roasted_coffee_data:
+        if roasted_coffee_data.get("date_added"):
             assert datetime.fromisoformat(
                 result["roastedCoffee"]["dateAdded"]
             ) == datetime.fromisoformat(roasted_coffee_data["date_added"])
-        if "date_removed" in roasted_coffee_data:
+        if roasted_coffee_data.get("date_removed"):
             assert datetime.fromisoformat(
                 result["roastedCoffee"]["dateRemoved"]
             ) == datetime.fromisoformat(roasted_coffee_data["date_removed"])
