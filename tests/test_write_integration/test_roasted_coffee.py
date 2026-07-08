@@ -627,9 +627,9 @@ def test_roasted_coffee_delete_components(
     component_count = len(sample_origin_data) + len(sample_green_coffee_data)
 
     inputs = [
-        {"green_id": sample_green_coffees[-1]["id"]},
+        {"greenId": sample_green_coffees[-1]["id"]},
         {
-            "origin_id": origin_id(sample_origin_data[-1]["name"]),
+            "originId": origin_id(sample_origin_data[-1]["name"]),
             "process": sample_origin_data[-1]["process"],
             "variety": sample_origin_data[-1]["variety"],
         },
@@ -666,6 +666,7 @@ def test_roasted_coffee_delete_components(
                 }
                 process
                 variety
+                fraction
             }
         }
     }
@@ -675,3 +676,347 @@ def test_roasted_coffee_delete_components(
     result = response.json()["data"]["roastedCoffees"][0]
 
     assert len(result["components"]) == component_count
+
+
+def test_roasted_coffee_green_coffee_component_update(
+    client,
+    create_roaster,
+    create_green_coffee,
+    create_roasted_coffee,
+    create_component_association,
+):
+    roaster_name = "test roaster"
+    sample_roasted_coffee_data = {
+        "name": "sample roasted coffee",
+        "roaster_name": roaster_name,
+        "profiles": ["blend", "seasonal"],
+        "tasting": ["cucumber", "watermelon", "hibiscus"],
+    }
+    sample_green_coffee_data = [
+        {
+            "name": "sample green 1",
+            "origin_name": "Huila",
+            "country_name": "Colombia",
+            "processes": ["washed"],
+            "varieties": ["typica", "caturra"],
+        }
+    ]
+
+    sample_roaster = create_roaster({"name": roaster_name, "country": "US"})
+    sample_roasted_coffee = create_roasted_coffee(sample_roasted_coffee_data)
+    sample_green_coffees = [
+        create_green_coffee(data) for data in sample_green_coffee_data
+    ]
+
+    sample_green_coffee_components = [
+        create_component_association(
+            roasted_id=sample_roasted_coffee["id"], green_id=green_coffee["id"]
+        )
+        for green_coffee in sample_green_coffees
+    ]
+    for result in sample_green_coffee_components:
+        assert (result["greenCoffee"] is None) or (result["origin"] is None)
+        assert result["fraction"] is None
+
+    update_query = """
+    mutation($id: ID!, $input: CoffeeComponentInput) {
+        roastedCoffeeComponentUpdate(id: $id, input: $input) {
+            roastedCoffee {
+                name
+                components {
+                    greenCoffee {
+                        name
+                    }
+                    origin {
+                        name
+                    }
+                    process
+                    variety
+                    fraction
+                }
+            }
+        }
+    }
+    """
+
+    # Test update None to number for green coffee component fraction
+    variables = {
+        "id": sample_roasted_coffee["id"],
+        "input": {
+            "greenId": sample_green_coffees[0]["id"],
+            "fraction": 100,
+        },
+    }
+    response = client.post("/", json={"query": update_query, "variables": variables})
+
+    assert response.status_code == 200
+    result = response.json()["data"]["roastedCoffeeComponentUpdate"]["roastedCoffee"]
+
+    assert result["components"][0]["fraction"] == 100
+
+    # Test update number to number for green coffee component fraction
+    variables = {
+        "id": sample_roasted_coffee["id"],
+        "input": {
+            "greenId": sample_green_coffees[0]["id"],
+            "fraction": 20,
+        },
+    }
+    response = client.post("/", json={"query": update_query, "variables": variables})
+
+    assert response.status_code == 200
+    result = response.json()["data"]["roastedCoffeeComponentUpdate"]["roastedCoffee"]
+
+    assert result["components"][0]["fraction"] == 20
+
+    # Test update number to None for green coffee component fraction
+    variables = {
+        "id": sample_roasted_coffee["id"],
+        "input": {
+            "greenId": sample_green_coffees[0]["id"],
+            "fraction": None,
+        },
+    }
+    response = client.post("/", json={"query": update_query, "variables": variables})
+
+    assert response.status_code == 200
+    result = response.json()["data"]["roastedCoffeeComponentUpdate"]["roastedCoffee"]
+
+    assert result["components"][0]["fraction"] is None
+
+
+def test_roasted_coffee_origin_component_update(
+    client,
+    origin_id,
+    create_roaster,
+    create_roasted_coffee,
+    create_component_association,
+):
+    roaster_name = "test roaster"
+    sample_roasted_coffee_data = {
+        "name": "sample roasted coffee",
+        "roaster_name": roaster_name,
+        "profiles": ["blend", "seasonal"],
+        "tasting": ["cucumber", "watermelon", "hibiscus"],
+    }
+    sample_origin_data = [{"name": "Huila", "process": "washed", "variety": "Caturra"}]
+
+    sample_roaster = create_roaster({"name": roaster_name, "country": "US"})
+    sample_roasted_coffee = create_roasted_coffee(sample_roasted_coffee_data)
+
+    sample_origin_components = [
+        create_component_association(
+            roasted_id=sample_roasted_coffee["id"],
+            origin_id=origin_id(sample_origin["name"]),
+            process=sample_origin["process"],
+            variety=sample_origin["variety"],
+        )
+        for sample_origin in sample_origin_data
+    ]
+
+    for result in sample_origin_components:
+        assert (result["greenCoffee"] is None) or (result["origin"] is None)
+        assert result["fraction"] is None
+
+    update_query = """
+    mutation($id: ID!, $input: CoffeeComponentInput) {
+        roastedCoffeeComponentUpdate(id: $id, input: $input) {
+            roastedCoffee {
+                name
+                components {
+                    greenCoffee {
+                        name
+                    }
+                    origin {
+                        name
+                    }
+                    process
+                    variety
+                    fraction
+                }
+            }
+        }
+    }
+    """
+
+    # Test update None to number for green coffee component fraction
+    variables = {
+        "id": sample_roasted_coffee["id"],
+        "input": {
+            "originId": origin_id(sample_origin_data[0]["name"]),
+            "process": sample_origin_data[0]["process"],
+            "variety": sample_origin_data[0]["variety"],
+            "fraction": 100,
+        },
+    }
+    response = client.post("/", json={"query": update_query, "variables": variables})
+
+    assert response.status_code == 200
+    result = response.json()["data"]["roastedCoffeeComponentUpdate"]["roastedCoffee"]
+
+    assert result["components"][0]["fraction"] == 100
+
+    # Test update number to number for green coffee component fraction
+    variables = {
+        "id": sample_roasted_coffee["id"],
+        "input": {
+            "originId": origin_id(sample_origin_data[0]["name"]),
+            "process": sample_origin_data[0]["process"],
+            "variety": sample_origin_data[0]["variety"],
+            "fraction": 20,
+        },
+    }
+    response = client.post("/", json={"query": update_query, "variables": variables})
+
+    assert response.status_code == 200
+    result = response.json()["data"]["roastedCoffeeComponentUpdate"]["roastedCoffee"]
+
+    assert result["components"][0]["fraction"] == 20
+
+    # Test update number to None for green coffee component fraction
+    variables = {
+        "id": sample_roasted_coffee["id"],
+        "input": {
+            "originId": origin_id(sample_origin_data[0]["name"]),
+            "process": sample_origin_data[0]["process"],
+            "variety": sample_origin_data[0]["variety"],
+            "fraction": None,
+        },
+    }
+    response = client.post("/", json={"query": update_query, "variables": variables})
+
+    assert response.status_code == 200
+    result = response.json()["data"]["roastedCoffeeComponentUpdate"]["roastedCoffee"]
+
+    assert result["components"][0]["fraction"] is None
+
+
+@pytest.mark.usefixtures("seed_sample_roasters")
+@pytest.mark.usefixtures("seed_sample_green_coffees")
+@pytest.mark.usefixtures("seed_sample_roasted_coffees")
+def test_roasted_coffee_component_update_error_handling(client):
+    query = """
+    mutation($id: ID!, $input: CoffeeComponentInput) {
+        roastedCoffeeComponentUpdate(id: $id, input: $input) {
+            status
+            error {
+                code
+                message
+            }
+        }
+    }
+    """
+
+    # Test error handling: roasted coffee not found
+    variables = {
+        "id": 9999,
+        "input": {"originId": 1},
+    }
+
+    response = client.post("/", json={"query": query, "variables": variables})
+    assert response.status_code == 200
+
+    result = response.json()["data"]["roastedCoffeeComponentUpdate"]
+    assert result["status"] == False
+    assert result["error"]["code"] == 404
+
+    # Both origin and green coffee components specified
+    variables = {
+        "id": 1,
+        "input": {"originId": 1, "greenId": 1},
+    }
+
+    response = client.post("/", json={"query": query, "variables": variables})
+    assert response.status_code == 200
+
+    result = response.json()["data"]["roastedCoffeeComponentUpdate"]
+    assert result["status"] == False
+    assert result["error"]["code"] == 400
+
+    # Neither origin nor green coffee components specified
+    variables = {
+        "id": 1,
+        "input": {},
+    }
+
+    response = client.post("/", json={"query": query, "variables": variables})
+    assert response.status_code == 200
+
+    result = response.json()["data"]["roastedCoffeeComponentUpdate"]
+    assert result["status"] == False
+    assert result["error"]["code"] == 400
+
+
+@pytest.mark.skip("incomplete refactoring")
+class TestRoastedCoffeeComponentUpdate:
+    @pytest.fixture(scope="class")
+    def roaster_name(self):
+        return "test roaster"
+
+    @pytest.fixture(scope="class")
+    def sample_roaster(self, roaster_name, create_roaster):
+        return create_roaster({"name": roaster_name, "country": "US"})
+
+    @pytest.fixture(scope="class")
+    def sample_green_coffees(self, create_green_coffee):
+        sample_green_coffee_data = [
+            {
+                "name": "sample green 1",
+                "origin_name": "Huila",
+                "country_name": "Colombia",
+                "processes": ["washed"],
+                "varieties": ["typica", "caturra"],
+            }
+        ]
+
+        return [create_green_coffee(data) for data in sample_green_coffee_data]
+
+    @pytest.fixture(scope="class")
+    def sample_roasted_coffee(self, roaster_name, create_roasted_coffee):
+        sample_roasted_coffee_data = {
+            "name": "sample roasted coffee",
+            "roaster_name": roaster_name,
+            "profiles": ["blend", "seasonal"],
+            "tasting": ["cucumber", "watermelon", "hibiscus"],
+        }
+
+        return create_roasted_coffee(sample_roasted_coffee_data)
+
+    @pytest.fixture(scope="class")
+    def sample_components(
+        self,
+        sample_roasted_coffee,
+        sample_green_coffees,
+        origin_id,
+        create_component_association,
+    ):
+        sample_origin_data = [
+            {"name": "Huila", "process": "washed", "variety": "Caturra"}
+        ]
+
+        sample_green_coffee_components = [
+            create_component_association(
+                roasted_id=sample_roasted_coffee["id"],
+                green_id=green_coffee["id"],
+            )
+            for green_coffee in sample_green_coffees
+        ]
+        sample_origin_components = [
+            create_component_association(
+                roasted_id=sample_roasted_coffee["id"],
+                origin_id=origin_id(sample_origin["name"]),
+                process=sample_origin["process"],
+                variety=sample_origin["variety"],
+            )
+            for sample_origin in sample_origin_data
+        ]
+
+        return {
+            "green_coffees": sample_green_coffee_components,
+            "origins": sample_origin_components,
+        }
+
+    def test_component_associations(self, sample_components):
+        for component_association in sample_components["green_coffees"]:
+            assert component_association["origin"] is None
+            assert component_association["fraction"] is None

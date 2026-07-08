@@ -317,6 +317,7 @@ def create_component_association(client):
                     id
                     name
                 }
+                fraction
             }
         }
         """
@@ -324,10 +325,10 @@ def create_component_association(client):
         variables = {"id": roasted_id, "input": {}}
 
         if green_id is not None:
-            variables["input"] = {"green_id": green_id}
+            variables["input"] = {"greenId": green_id}
         elif origin_id is not None:
             variables["input"] = {
-                "origin_id": origin_id,
+                "originId": origin_id,
                 "process": process,
                 "variety": variety,
             }
