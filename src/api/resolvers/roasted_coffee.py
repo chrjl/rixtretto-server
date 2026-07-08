@@ -430,3 +430,63 @@ def resolve_roasted_coffee_component_delete(
         roasted_coffee = session.get(models.RoastedCoffee, roasted_id)
 
     return {"status": True, "roasted_coffee": roasted_coffee}
+
+
+@mutation_type.field("roastedCoffeeComponentUpdate")
+def resolve_roasted_coffee_component_update(
+    _, info: GraphQLResolveInfo, id: int, input: CoffeeComponentInput
+) -> CoffeeComponentMutationResult:
+    Session = info.context["Session"]
+
+    roasted_id = id
+    green_id = input.get("green_id")
+    origin_id = input.get("origin_id")
+    process = input.get("process")
+    variety = input.get("variety")
+    fraction = input.get("fraction")
+
+    if (green_id is None) and (origin_id is None):
+        return {
+            "status": False,
+            "error": {
+                "code": 400,
+                "message": "Missing required parameter: either `greenId` or `originId` must be specified.",
+            },
+        }
+
+    if (green_id is not None) and (origin_id is not None):
+        return {
+            "status": False,
+            "error": {
+                "code": 400,
+                "message": "Too many parameters: only one of either `greenId` or `originId` must be specified.",
+            },
+        }
+
+    with Session() as session:
+        roasted_coffee = session.get(models.RoastedCoffee, roasted_id)
+
+        if roasted_coffee is None:
+            return {
+                "status": False,
+                "error": {
+                    "code": 404,
+                    "message": f"Roasted coffee with id `{roasted_id}` not found",
+                },
+            }
+
+        session.execute(
+            queries.RoastedCoffee().update_component(
+                roasted_id=roasted_id,
+                green_id=green_id,
+                origin_id=origin_id,
+                process=process,
+                variety=variety,
+                fraction=fraction,
+            )
+        )
+
+        session.commit()
+        session.refresh(roasted_coffee)
+
+    return {"status": True, "roasted_coffee": roasted_coffee}
