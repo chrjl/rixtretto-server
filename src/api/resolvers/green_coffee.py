@@ -147,6 +147,15 @@ def resolve_green_coffee_update(
     with Session() as session:
         green_coffee = session.get(models.GreenCoffee, id)
 
+        if green_coffee is None:
+            return {
+                "status": False,
+                "error": {
+                    "code": 404,
+                    "message": f"Green coffee with id `{id}` not found",
+                },
+            }
+
         for key, value in normalized_green_coffee_input(input).items():
             setattr(green_coffee, key, value)
 

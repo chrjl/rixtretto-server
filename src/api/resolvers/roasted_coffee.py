@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from datetime import datetime
 from ariadne import ObjectType
+from sqlalchemy.exc import IntegrityError
 
 from db import models, queries
 from .mutation import mutation_type
@@ -156,7 +157,7 @@ def resolve_roasted_coffee_create(
             "status": False,
             "error": {
                 "code": 400,
-                "message": "Datetime fields not in iso formatDatetime fields not in iso format",
+                "message": "Datetime fields not in iso format",
             },
         }
 
@@ -190,6 +191,15 @@ def resolve_roasted_coffee_update(
 
     with Session() as session:
         roasted_coffee = session.get(models.RoastedCoffee, id)
+
+        if roasted_coffee is None:
+            return {
+                "status": False,
+                "error": {
+                    "code": 404,
+                    "message": f"Roasted coffee with id `{id}` not found",
+                },
+            }
 
         if "name" in input:
             if input["name"] is None:
@@ -352,6 +362,17 @@ def resolve_roasted_coffee_component_add(
 
     with Session() as session:
         roasted_coffee = session.get(models.RoastedCoffee, roasted_id)
+        if roasted_coffee is None:
+            return {
+                "status": False,
+                "error": {
+                    "code": 404,
+                    "message": f"Roasted coffee with id `{id}` not found",
+                },
+            }
+
+        green_coffee = None
+        origin = None
 
         component_association = models.CoffeeComponent(
             roasted_id=roasted_id,
@@ -359,23 +380,45 @@ def resolve_roasted_coffee_component_add(
         )
 
         if green_id is not None:
+            green_coffee = session.get(models.GreenCoffee, green_id)
+
+            if green_coffee is None:
+                return {
+                    "status": False,
+                    "error": {
+                        "code": 404,
+                        "message": f"Green coffee with id `{green_id}` not found",
+                    },
+                }
+
             component_association.green_id = green_id
         elif origin_id is not None:
+            origin = session.get(models.Origin, origin_id)
+
+            if origin is None:
+                return {
+                    "status": False,
+                    "error": {
+                        "code": 404,
+                        "message": f"Origin with id `{origin_id}` not found",
+                    },
+                }
+
             component_association.origin_id = origin_id
             component_association.process = process
             component_association.variety = variety
 
         roasted_coffee.component_associations.append(component_association)
-        session.commit()
+
+        try:
+            session.commit()
+        except IntegrityError:
+            return {
+                "status": False,
+                "error": {"code": 400, "message": "Issue with inputs."},
+            }
 
         session.refresh(roasted_coffee)
-
-        green_coffee = (
-            session.get(models.GreenCoffee, green_id) if green_id is not None else None
-        )
-        origin = (
-            session.get(models.Origin, origin_id) if origin_id is not None else None
-        )
 
     return {
         "status": True,
