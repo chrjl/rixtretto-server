@@ -17,15 +17,10 @@ type Mutation {
     id: ID
     input: GreenCoffeeInput!
   ): GreenCoffeeMutationResult!
-  greenCoffeeTagAdd(
-    id: ID!
-    type: String!
-    values: [String]!
-  ): GreenCoffeeMutationResult!
+  greenCoffeeTagAdd(id: ID!, input: CoffeeTagInput): GreenCoffeeMutationResult!
   greenCoffeeTagDelete(
     id: ID!
-    type: String!
-    values: [String]
+    input: CoffeeTagInput
   ): GreenCoffeeMutationResult!
   roastedCoffeeCreate(input: RoastedCoffeeInput!): RoastedCoffeeMutationResult!
   roastedCoffeeUpdate(
@@ -34,13 +29,11 @@ type Mutation {
   ): RoastedCoffeeMutationResult!
   roastedCoffeeTagAdd(
     id: ID!
-    type: String!
-    values: [String]!
+    input: CoffeeTagInput
   ): RoastedCoffeeMutationResult!
   roastedCoffeeTagDelete(
     id: ID!
-    type: String!
-    values: [String]
+    input: CoffeeTagInput
   ): RoastedCoffeeMutationResult!
   roastedCoffeeComponentAdd(
     id: ID!
@@ -109,6 +102,11 @@ input Filter {
   name: NameFilter
   location: LocationFilter
   coffeeDetail: CoffeeFilter
+}
+
+input CoffeeTagInput {
+  type: String!
+  values: [String]
 }
 
 type Country {
