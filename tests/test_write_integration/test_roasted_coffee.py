@@ -126,8 +126,8 @@ def test_roasted_coffee_tag_add(client, seed_sample_roasted_coffees):
         sample_data = next(sample_data_iterator)
 
     mutation_query = """
-    mutation($id: ID!, $type: String!, $values: [String]!) {
-        roastedCoffeeTagAdd(id: $id, type: $type, values: $values) {
+    mutation($id: ID!, $input: CoffeeTagInput!) {
+        roastedCoffeeTagAdd(id: $id, input: $input) {
             status
             error {
                 code
@@ -149,8 +149,10 @@ def test_roasted_coffee_tag_add(client, seed_sample_roasted_coffees):
             "query": mutation_query,
             "variables": {
                 "id": sample_data["id"],
-                "type": "profile",
-                "values": ["test_value"],
+                "input": {
+                    "type": "profile",
+                    "values": ["test_value"],
+                },
             },
         },
     )
@@ -171,8 +173,8 @@ def test_roasted_coffee_tag_clear(client, seed_sample_roasted_coffees):
         sample_data = next(sample_data_iterator)
 
     mutation_query = """
-    mutation($id: ID!, $type: String!) {
-        roastedCoffeeTagDelete(id: $id, type: $type) {
+    mutation($id: ID!, $input: CoffeeTagInput!) {
+        roastedCoffeeTagDelete(id: $id, input: $input) {
             status
             error {
                 code
@@ -192,7 +194,7 @@ def test_roasted_coffee_tag_clear(client, seed_sample_roasted_coffees):
         "/",
         json={
             "query": mutation_query,
-            "variables": {"id": sample_data["id"], "type": "profile"},
+            "variables": {"id": sample_data["id"], "input": {"type": "profile"}},
         },
     )
     assert response.status_code == 200
@@ -206,7 +208,7 @@ def test_roasted_coffee_tag_clear(client, seed_sample_roasted_coffees):
         "/",
         json={
             "query": mutation_query,
-            "variables": {"id": sample_data["id"], "type": "tasting"},
+            "variables": {"id": sample_data["id"], "input": {"type": "tasting"}},
         },
     )
     assert response.status_code == 200
@@ -220,7 +222,7 @@ def test_roasted_coffee_tag_clear(client, seed_sample_roasted_coffees):
         "/",
         json={
             "query": mutation_query,
-            "variables": {"id": sample_data["id"], "type": "error"},
+            "variables": {"id": sample_data["id"], "input": {"type": "error"}},
         },
     )
     assert response.status_code == 200
@@ -238,8 +240,8 @@ def test_roasted_coffee_tag_delete(client, seed_sample_roasted_coffees):
         sample_data = next(sample_data_iterator)
 
     mutation_query = """
-    mutation($id: ID!, $type: String!, $values: [String]) {
-        roastedCoffeeTagDelete(id: $id, type: $type, values: $values) {
+    mutation($id: ID!, $input: CoffeeTagInput!) {
+        roastedCoffeeTagDelete(id: $id, input: $input) {
             status
             error {
                 code
@@ -261,8 +263,10 @@ def test_roasted_coffee_tag_delete(client, seed_sample_roasted_coffees):
             "query": mutation_query,
             "variables": {
                 "id": sample_data["id"],
-                "type": "profile",
-                "values": [sample_data["profiles"][-1]],
+                "input": {
+                    "type": "profile",
+                    "values": [sample_data["profiles"][-1]],
+                },
             },
         },
     )

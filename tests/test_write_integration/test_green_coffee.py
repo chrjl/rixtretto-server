@@ -101,8 +101,10 @@ def test_green_coffee_tag_add(client, green_coffees_list, create_green_coffee):
     green_coffee_obj = create_green_coffee(sample_green_coffee)
 
     mutation_query = """
-    mutation($id: ID!, $type: String!, $values: [String]!) {
-        greenCoffeeTagAdd(id: $id, type: $type, values: $values) {
+    # mutation($id: ID!, $type: String!, $values: [String]!) {
+    #     greenCoffeeTagAdd(id: $id, type: $type, values: $values) {
+    mutation($id: ID!, $input: CoffeeTagInput!) {
+        greenCoffeeTagAdd(id: $id, input: $input) {
             status
             error {
                 code
@@ -125,8 +127,10 @@ def test_green_coffee_tag_add(client, green_coffees_list, create_green_coffee):
             "query": mutation_query,
             "variables": {
                 "id": green_coffee_obj["id"],
-                "type": "process",
-                "values": ["test_value"],
+                "input": {
+                    "type": "process",
+                    "values": ["test_value"],
+                },
             },
         },
     )
@@ -147,8 +151,8 @@ def test_green_coffee_tag_clear(client, green_coffees_list, create_green_coffee)
     green_coffee_obj = create_green_coffee(sample_green_coffee)
 
     mutation_query = """
-    mutation($id: ID!, $type: String!) {
-        greenCoffeeTagDelete(id: $id, type: $type) {
+    mutation($id: ID!, $input: CoffeeTagInput!) {
+        greenCoffeeTagDelete(id: $id, input: $input) {
             status
             error {
                 code
@@ -169,7 +173,7 @@ def test_green_coffee_tag_clear(client, green_coffees_list, create_green_coffee)
         "/",
         json={
             "query": mutation_query,
-            "variables": {"id": green_coffee_obj["id"], "type": "process"},
+            "variables": {"id": green_coffee_obj["id"], "input": {"type": "process"}},
         },
     )
     assert response.status_code == 200
@@ -184,7 +188,7 @@ def test_green_coffee_tag_clear(client, green_coffees_list, create_green_coffee)
         "/",
         json={
             "query": mutation_query,
-            "variables": {"id": green_coffee_obj["id"], "type": "variety"},
+            "variables": {"id": green_coffee_obj["id"], "input": {"type": "variety"}},
         },
     )
     assert response.status_code == 200
@@ -199,7 +203,7 @@ def test_green_coffee_tag_clear(client, green_coffees_list, create_green_coffee)
         "/",
         json={
             "query": mutation_query,
-            "variables": {"id": green_coffee_obj["id"], "type": "error"},
+            "variables": {"id": green_coffee_obj["id"], "input": {"type": "error"}},
         },
     )
     assert response.status_code == 200
@@ -214,8 +218,8 @@ def test_green_coffee_tag_delete(client, green_coffees_list, create_green_coffee
     green_coffee_obj = create_green_coffee(sample_green_coffee)
 
     mutation_query = """
-    mutation($id: ID!, $type: String!, $values: [String]) {
-        greenCoffeeTagDelete(id: $id, type: $type, values: $values) {
+    mutation($id: ID!, $input: CoffeeTagInput!) {
+        greenCoffeeTagDelete(id: $id, input: $input) {
             status
             error {
                 code
@@ -238,8 +242,10 @@ def test_green_coffee_tag_delete(client, green_coffees_list, create_green_coffee
             "query": mutation_query,
             "variables": {
                 "id": green_coffee_obj["id"],
-                "type": "variety",
-                "values": [sample_green_coffee["varieties"][-1]],
+                "input": {
+                    "type": "variety",
+                    "values": [sample_green_coffee["varieties"][-1]],
+                },
             },
         },
     )
