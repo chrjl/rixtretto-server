@@ -10,6 +10,7 @@ from .mutation import mutation_type
 from api.types import (
     RoastedCoffeeInput,
     RoastedCoffeeMutationResult,
+    CoffeeTagInput,
     CoffeeComponentInput,
     CoffeeComponentMutationResult,
 )
@@ -277,9 +278,21 @@ def resolve_roasted_coffee_update(
 
 @mutation_type.field("roastedCoffeeTagAdd")
 def resolve_roasted_coffee_tag_add(
-    _, info: GraphQLResolveInfo, id: int, type: str, values: list[str]
+    _, info: GraphQLResolveInfo, id: int, input: CoffeeTagInput
 ) -> RoastedCoffeeMutationResult:
     Session = info.context["Session"]
+    type = input["type"]
+
+    if "values" not in input:
+        return {
+            "status": False,
+            "error": {
+                "code": 400,
+                "message": f"Input is missing tag values for type {type}",
+            },
+        }
+
+    values = input["values"]
 
     if type not in SUPPORTED_TAG_TYPES:
         return {
@@ -299,9 +312,10 @@ def resolve_roasted_coffee_tag_add(
 
 @mutation_type.field("roastedCoffeeTagDelete")
 def resolve_roasted_coffee_tag_delete(
-    _, info: GraphQLResolveInfo, id: int, type: str, values: list[str] | None = None
+    _, info: GraphQLResolveInfo, id: int, input: CoffeeTagInput
 ) -> RoastedCoffeeMutationResult:
     Session = info.context["Session"]
+    type = input["type"]
 
     if type not in SUPPORTED_TAG_TYPES:
         return {
@@ -310,10 +324,12 @@ def resolve_roasted_coffee_tag_delete(
         }
 
     with Session() as session:
-        if values is None:
+        if "values" not in input:
             session.execute(queries.RoastedCoffee().clear_tag(roasted_id=id, type=type))
 
         else:
+            values = input["values"]
+
             session.execute(
                 queries.RoastedCoffee().delete_tags(
                     roasted_id=id, type=type, values=values
@@ -324,6 +340,28 @@ def resolve_roasted_coffee_tag_delete(
         roasted_coffee = session.get(models.RoastedCoffee, id)
 
     return {"status": True, "roasted_coffee": roasted_coffee}
+
+
+def validate_coffee_component(
+    origin_id, green_id
+) -> CoffeeComponentMutationResult | None:
+    if (green_id is None) and (origin_id is None):
+        return {
+            "status": False,
+            "error": {
+                "code": 400,
+                "message": "Missing required parameter: either `greenId` or `originId` must be specified.",
+            },
+        }
+
+    if (green_id is not None) and (origin_id is not None):
+        return {
+            "status": False,
+            "error": {
+                "code": 400,
+                "message": "Too many parameters: only one of either `greenId` or `originId` must be specified.",
+            },
+        }
 
 
 @mutation_type.field("roastedCoffeeComponentAdd")
@@ -342,23 +380,8 @@ def resolve_roasted_coffee_component_add(
     variety = input.get("variety")
     fraction = input.get("fraction")
 
-    if (green_id is None) and (origin_id is None):
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": "Missing required parameter: either `greenId` or `originId` must be specified.",
-            },
-        }
-
-    if (green_id is not None) and (origin_id is not None):
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": "Too many parameters: only one of either `greenId` or `originId` must be specified.",
-            },
-        }
+    if error_response := validate_coffee_component(origin_id, green_id):
+        return error_response
 
     with Session() as session:
         roasted_coffee = session.get(models.RoastedCoffee, roasted_id)
@@ -379,39 +402,43 @@ def resolve_roasted_coffee_component_add(
             fraction=fraction,
         )
 
-        if green_id is not None:
-            green_coffee = session.get(models.GreenCoffee, green_id)
-
-            if green_coffee is None:
-                return {
-                    "status": False,
-                    "error": {
-                        "code": 404,
-                        "message": f"Green coffee with id `{green_id}` not found",
-                    },
-                }
-
-            component_association.green_id = green_id
-        elif origin_id is not None:
-            origin = session.get(models.Origin, origin_id)
-
-            if origin is None:
-                return {
-                    "status": False,
-                    "error": {
-                        "code": 404,
-                        "message": f"Origin with id `{origin_id}` not found",
-                    },
-                }
-
-            component_association.origin_id = origin_id
-            component_association.process = process
-            component_association.variety = variety
-
         roasted_coffee.component_associations.append(component_association)
 
         try:
-            session.commit()
+            if green_id is not None:
+                green_coffee = session.get(models.GreenCoffee, green_id)
+
+                if green_coffee is None:
+                    return {
+                        "status": False,
+                        "error": {
+                            "code": 404,
+                            "message": f"Green coffee with id `{green_id}` not found",
+                        },
+                    }
+
+                component_association.green_id = green_id
+
+                session.commit()
+                session.refresh(green_coffee)
+            elif origin_id is not None:
+                origin = session.get(models.Origin, origin_id)
+
+                if origin is None:
+                    return {
+                        "status": False,
+                        "error": {
+                            "code": 404,
+                            "message": f"Origin with id `{origin_id}` not found",
+                        },
+                    }
+
+                component_association.origin_id = origin_id
+                component_association.process = process
+                component_association.variety = variety
+
+                session.commit()
+                session.refresh(origin)
         except IntegrityError:
             return {
                 "status": False,
@@ -440,23 +467,8 @@ def resolve_roasted_coffee_component_delete(
     process = input.get("process")
     variety = input.get("variety")
 
-    if (green_id is None) and (origin_id is None):
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": "Missing required parameter: either `greenId` or `originId` must be specified.",
-            },
-        }
-
-    if (green_id is not None) and (origin_id is not None):
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": "Too many parameters: only one of either `greenId` or `originId` must be specified.",
-            },
-        }
+    if error_response := validate_coffee_component(origin_id, green_id):
+        return error_response
 
     with Session() as session:
         session.execute(

@@ -165,6 +165,11 @@ class RoastedCoffeeMutationResult(TypedDict, total=False):
     roasted_coffee: models.RoastedCoffee | None
 
 
+class CoffeeTagInput(TypedDict, total=False):
+    type: Required[str]
+    values: list[str]
+
+
 class CoffeeComponentInput(TypedDict, total=False):
     green_id: int
     origin_id: int

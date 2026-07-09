@@ -6,6 +6,7 @@ from ariadne import ObjectType
 from db import models, queries
 from api.types import (
     GreenCoffeeInput,
+    CoffeeTagInput,
     normalized_green_coffee_input,
     normalized_green_coffee_tags,
 )
@@ -178,9 +179,21 @@ def resolve_green_coffee_update(
 
 @mutation_type.field("greenCoffeeTagAdd")
 def resolve_green_coffee_tag_add(
-    _, info: GraphQLResolveInfo, id: int, type: str, values: list[str]
+    _, info: GraphQLResolveInfo, id: int, input: CoffeeTagInput
 ):
     Session = info.context["Session"]
+    type = input["type"]
+
+    if "values" not in input:
+        return {
+            "status": False,
+            "error": {
+                "code": 400,
+                "message": f"Input is missing tag values for type `{type}`",
+            },
+        }
+
+    values = input["values"]
 
     if type not in SUPPORTED_TAG_TYPES:
         return {
@@ -200,9 +213,10 @@ def resolve_green_coffee_tag_add(
 
 @mutation_type.field("greenCoffeeTagDelete")
 def resolve_green_coffee_tag_delete(
-    _, info: GraphQLResolveInfo, id: int, type: str, values: list[str] | None = None
+    _, info: GraphQLResolveInfo, id: int, input: CoffeeTagInput
 ):
     Session = info.context["Session"]
+    type = input["type"]
 
     if type not in SUPPORTED_TAG_TYPES:
         return {
@@ -211,10 +225,12 @@ def resolve_green_coffee_tag_delete(
         }
 
     with Session() as session:
-        if values is None:
+        if "values" not in input:
             session.execute(queries.GreenCoffee().clear_tag(green_id=id, type=type))
 
         else:
+            values = input["values"]
+
             session.execute(
                 queries.GreenCoffee().delete_tags(green_id=id, type=type, values=values)
             )
