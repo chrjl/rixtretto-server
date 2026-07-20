@@ -114,7 +114,7 @@ class Roaster(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     _name: Mapped[str] = mapped_column("name")
     _name_n: Mapped[str] = mapped_column(
-        comment="`name` column normalized to remove case and accents",
+        comment="`name` column normalized to remove case, accents, punctuation",
         default=lambda context: normalized_text(
             context.get_current_parameters()["name"]
         ),
@@ -158,6 +158,7 @@ class CoffeeTagType(Base):
 
     __tablename__ = "coffee_tag_types"
     name: Mapped[str] = mapped_column(primary_key=True)
+    description: Mapped[str] = mapped_column(nullable=True)
 
 
 class RoastedCoffee(Base):
@@ -200,7 +201,7 @@ class RoastedCoffee(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     _name: Mapped[str] = mapped_column("name")
     _name_n: Mapped[str] = mapped_column(
-        comment="`name` column normalized to remove case and accents",
+        comment="`name` column normalized to remove case, accents, punctuation",
         default=lambda context: normalized_text(
             context.get_current_parameters()["name"]
         ),
@@ -260,10 +261,14 @@ class RoastedCoffeeTag(Base):
     """Association table for descriptors of roasted coffee."""
 
     __tablename__ = "roasted_coffee_tags"
+    __table_args__ = {"comment": "Vendor-provided details."}
     roasted_id: Mapped[int] = mapped_column(
         ForeignKey("roasted_coffees.id"), primary_key=True
     )
-    type: Mapped[str] = mapped_column(primary_key=True)
+    type: Mapped[str] = mapped_column(
+        ForeignKey("coffee_tag_types.name", ondelete="RESTRICT", onupdate="CASCADE"),
+        primary_key=True,
+    )
     value: Mapped[str] = mapped_column(primary_key=True)
 
     def __repr__(self):
@@ -304,7 +309,7 @@ class Origin(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     _name: Mapped[str] = mapped_column("name")
     _name_n: Mapped[str] = mapped_column(
-        comment="`name` column normalized to remove case and accents",
+        comment="`name` column normalized to remove case, accents, punctuation",
         default=lambda context: normalized_text(
             context.get_current_parameters()["name"]
         ),
@@ -435,7 +440,7 @@ class GreenCoffee(Base):
         comment="Green coffees without an assigned name refer to generic/unknown coffee of the specified region.",
     )
     _name_n: Mapped[str] = mapped_column(
-        comment="`name` column normalized to remove case and accents",
+        comment="`name` column normalized to remove case, accents, punctuation",
         default=lambda context: normalized_text(
             context.get_current_parameters()["name"]
         ),
@@ -486,10 +491,15 @@ class GreenCoffeeTag(Base):
     """Association table for descriptors of green coffee."""
 
     __tablename__ = "green_coffee_tags"
+    __table_args__ = {"comment": "Vendor-provided details."}
+
     green_id: Mapped[int] = mapped_column(
         ForeignKey("green_coffees.id"), primary_key=True
     )
-    type: Mapped[str] = mapped_column(primary_key=True)
+    type: Mapped[str] = mapped_column(
+        ForeignKey("coffee_tag_types.name", ondelete="RESTRICT", onupdate="CASCADE"),
+        primary_key=True,
+    )
     value: Mapped[str] = mapped_column(primary_key=True)
 
     green_coffee: Mapped["GreenCoffee"] = relationship(back_populates="tags")

@@ -71,6 +71,8 @@ def create_normalized_column(
     # Add constraints
     if nullable:
         op.alter_column(table_name, normalized_column_name, nullable=True)
+    else:
+        op.alter_column(table_name, normalized_column_name, nullable=False)
 
 
 def upgrade() -> None:

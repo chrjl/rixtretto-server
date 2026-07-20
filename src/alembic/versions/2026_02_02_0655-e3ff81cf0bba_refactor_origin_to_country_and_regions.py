@@ -225,6 +225,10 @@ def upgrade() -> None:
         "green_coffees", "origin_id", existing_nullable=True, nullable=False
     )
 
+    op.alter_column(
+        "green_coffees", "name", existing_nullable=True, nullable=False
+    )
+
     # Drop previous origins table
     op.drop_column("green_coffees", "region_id")
     op.drop_table("origins_previous")
@@ -274,6 +278,10 @@ def downgrade() -> None:
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("country", sa.String(2)),
         sa.Column("region", sa.String),
+    )
+
+    op.alter_column(
+        "green_coffees", "name", existing_nullable=False, nullable=True
     )
 
     connection.execute(
