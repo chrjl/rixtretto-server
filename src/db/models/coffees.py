@@ -1,156 +1,19 @@
-from sqlalchemy import ForeignKey, JSON, String, select, func, Integer, Text
-from sqlalchemy.orm import (
-    DeclarativeBase,
-    Mapped,
-    mapped_column,
-    relationship,
-    column_property,
-)
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from sqlalchemy import ForeignKey, String, select, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship, column_property
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
-from sqlalchemy.ext.mutable import MutableList, MutableDict
 from datetime import datetime
-from typing import Any
-from .utilities import normalized_text
 
+from ..utilities import normalized_text
+from .utilities import representation, getdeepattr
 
-def getdeepattr(obj: Any, attr: str, default: Any = None):
-    result = obj
+from .base import Base
 
-    for a in attr.split("."):
-        try:
-            if not hasattr(result, a):
-                return default
-
-            result = getattr(result, a)
-        except DetachedInstanceError:
-            return default
-
-    return result
-
-
-def representation(title: str, fields: dict[str, Any]) -> str:
-    items = []
-
-    for field, value in fields.items():
-        try:
-            if type(value) == str:
-                items.append(f'{field}="{value}"')
-            elif value is not None:
-                items.append(f"{field}={str(value)}")
-        except AttributeError or KeyError:
-            pass
-
-    return f"{title}({", ".join(items)})"
-
-
-class Base(DeclarativeBase):
-    type_annotation_map = {
-        list[str]: MutableList.as_mutable(JSON),
-        list[dict]: MutableList.as_mutable(JSON),
-        dict: MutableDict.as_mutable(JSON),
-    }
-
-
-class Roaster(Base):
-    """Objects from the `roasters` table.
-
-    Required attributes:
-        name(str): name of the roaster
-        country(str): 2-letter country code
-
-    Relationships:
-        coffees(list[RoastedCoffee])
-
-    Optional attributes:
-        city(str)
-        state(str)
-        equipment_brand(str)
-        equipment_model(str)
-        equipment_capacity(float): in kg
-
-    JSON attributes:
-        details: additional contact details (see contact.schema.json)
-
-            {
-                "website": "https://gget.com",
-                "profiles": [
-                    {
-                        "network": "facebook",
-                        "handle": "ggetla",
-                        "url": "https://facebook.com/ggetla"
-                    }
-                ],
-                "locations": [
-                    {
-                        "name": "Grand Central Market",
-                        "type": "coffeebar",
-                        "address": "317 S Broadway",
-                        "city": "Los Angeles",
-                        "state": "CA",
-                        "zipcode": 90013
-                    }
-                ],
-                "contacts": [
-                    {
-                        "name": "John Doe",
-                        "title": "Head roaster",
-                        "location": "Roastery",
-                        "address": "123 Unknown",
-                        "city": "Los Angeles",
-                        "state": "CA",
-                        "zipcode": 99999
-                    }
-                ]
-            }
-    """
-
-    __tablename__ = "roasters"
-    __table_args__ = {
-        "comment": "Identity information of companies, people, or users that roast coffees."
-    }
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    _name: Mapped[str] = mapped_column("name")
-    _name_n: Mapped[str] = mapped_column(
-        comment="`name` column normalized to remove case, accents, punctuation",
-        default=lambda context: normalized_text(
-            context.get_current_parameters()["name"]
-        ),
-    )
-
-    @hybrid_property
-    def name(self) -> str:
-        return self._name
-
-    @name.inplace.setter
-    def name_setter(self, value: str):
-        self._name_n = normalized_text(value)
-        self._name = value
-
-    city: Mapped[str | None]
-    state: Mapped[str | None]
-    country: Mapped[str] = mapped_column(
-        String(length=2), comment="Two letter country code (ISO 3166-1 alpha-2)"
-    )
-    details: Mapped[dict] = mapped_column(
-        nullable=True,
-        server_default="{}",
-        comment="Can include contact information, website, socials profiles, location details, etc.",
-    )
-    equipment_brand: Mapped[str | None]
-    equipment_model: Mapped[str | None]
-    equipment_capacity: Mapped[float | None] = mapped_column(
-        comment="Size of the roasting machine in kg."
-    )
-
-    coffees: Mapped[list["RoastedCoffee"]] = relationship(back_populates="roaster")
-
-    def __repr__(self):
-        fields = {"id": getattr(self, "id", None), "name": getattr(self, "name", None)}
-
-        return representation("Roaster", fields)
+if TYPE_CHECKING:
+    from .roasters import Roaster
 
 
 class CoffeeTagType(Base):
@@ -435,10 +298,7 @@ class GreenCoffee(Base):
     __tablename__ = "green_coffees"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    _name: Mapped[str] = mapped_column(
-        "name",
-        comment="Green coffees without an assigned name refer to generic/unknown coffee of the specified region.",
-    )
+    _name: Mapped[str] = mapped_column("name")
     _name_n: Mapped[str] = mapped_column(
         comment="`name` column normalized to remove case, accents, punctuation",
         default=lambda context: normalized_text(
