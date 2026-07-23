@@ -5,7 +5,7 @@ from ariadne import ObjectType
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ariadne.types import GraphQLResolveInfo
+    from graphql import GraphQLResolveInfo
     from db import models
 
 component_association = ObjectType("CoffeeComponent")

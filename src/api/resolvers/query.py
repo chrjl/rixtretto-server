@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Sequence
-    from ariadne.types import GraphQLResolveInfo
+    from graphql import GraphQLResolveInfo
 
 
 query = QueryType()

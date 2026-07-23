@@ -16,7 +16,7 @@ from api.types import (
 )
 
 if TYPE_CHECKING:
-    from ariadne.types import GraphQLResolveInfo
+    from graphql import GraphQLResolveInfo
 
 SUPPORTED_TAG_TYPES = ["profile", "tasting"]
 

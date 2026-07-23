@@ -13,7 +13,7 @@ from api.types import (
 from .mutation import mutation_type
 
 if TYPE_CHECKING:
-    from ariadne.types import GraphQLResolveInfo
+    from graphql import GraphQLResolveInfo
 
 SUPPORTED_TAG_TYPES = ["process", "variety", "tasting"]
 

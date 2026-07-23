@@ -9,7 +9,7 @@ from api.types import normalized_roaster_input
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ariadne.types import GraphQLResolveInfo
+    from graphql import GraphQLResolveInfo
 
 roaster = ObjectType("Roaster")
 
