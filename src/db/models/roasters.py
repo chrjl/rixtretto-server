@@ -5,15 +5,14 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
-from .base import Base
-from ..utilities import normalized_text
+from .base import BaseWithNormalizedName
 from .utilities import representation
 
 if TYPE_CHECKING:
     from .coffees import RoastedCoffee
 
 
-class Roaster(Base):
+class Roaster(BaseWithNormalizedName):
     """Objects from the `roasters` table.
 
     Required attributes:
@@ -72,23 +71,6 @@ class Roaster(Base):
     }
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    _name: Mapped[str] = mapped_column("name")
-    _name_n: Mapped[str] = mapped_column(
-        comment="`name` column normalized to remove case, accents, punctuation",
-        default=lambda context: normalized_text(
-            context.get_current_parameters()["name"]
-        ),
-    )
-
-    @hybrid_property
-    def name(self) -> str:
-        return self._name
-
-    @name.inplace.setter
-    def name_setter(self, value: str):
-        self._name_n = normalized_text(value)
-        self._name = value
-
     city: Mapped[str | None]
     state: Mapped[str | None]
     country: Mapped[str] = mapped_column(

@@ -4,9 +4,14 @@ from unidecode import unidecode
 from string import punctuation
 
 
-def normalized_text(text: str) -> str:
-    """Normalize text by removing accents, case, and punctuation."""
-    return unidecode(text).lower().translate(str.maketrans("", "", punctuation))
+def normalized_text(text: str, remove_spaces: bool = True) -> str:
+    """Normalize text by removing accents, case, spaces, and punctuation."""
+    normalized = unidecode(text).lower().translate(str.maketrans("", "", punctuation))
+
+    if remove_spaces:
+        return normalized.replace(" ", "")
+
+    return normalized
 
 
 def is_in_model(model: type[DeclarativeBase], key: str, *args) -> bool:

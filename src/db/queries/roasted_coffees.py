@@ -29,7 +29,7 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
         self._filters.append(
             and_(
                 func.lower(models.RoastedCoffeeTag.value).in_(
-                    [normalized_text(value) for value in values]
+                    [normalized_text(value, remove_spaces=False) for value in values]
                 ),
                 models.RoastedCoffeeTag.type == tag_name,
             )
@@ -159,17 +159,25 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
             raise ValueError
 
         if green_id is not None:
-            return update(models.CoffeeComponent).where(
-                models.CoffeeComponent.roasted_id == roasted_id,
-                models.CoffeeComponent.green_id == green_id,
-            ).values(fraction=fraction)
+            return (
+                update(models.CoffeeComponent)
+                .where(
+                    models.CoffeeComponent.roasted_id == roasted_id,
+                    models.CoffeeComponent.green_id == green_id,
+                )
+                .values(fraction=fraction)
+            )
         elif origin_id is not None:
-            return update(models.CoffeeComponent).where(
-                models.CoffeeComponent.roasted_id == roasted_id,
-                models.CoffeeComponent.origin_id == origin_id,
-                models.CoffeeComponent.process == process,
-                models.CoffeeComponent.variety == variety,
-            ).values(fraction=fraction)
+            return (
+                update(models.CoffeeComponent)
+                .where(
+                    models.CoffeeComponent.roasted_id == roasted_id,
+                    models.CoffeeComponent.origin_id == origin_id,
+                    models.CoffeeComponent.process == process,
+                    models.CoffeeComponent.variety == variety,
+                )
+                .values(fraction=fraction)
+            )
 
     def origins(self) -> Select[tuple[models.Origin]]:
         """List of `Origin` objects of components of a `RoastedCoffee`.

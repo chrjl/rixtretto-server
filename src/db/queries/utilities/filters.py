@@ -30,7 +30,10 @@ class Filter(NameFilter, CoffeeFilter):
 
 
 def name_filter_clauses(
-    filter: NameFilter | None, model, name_column: str = "_name_n"
+    filter: NameFilter | None,
+    model,
+    name_column: str = "normalized_name",
+    normalize: bool = True,
 ) -> list[ColumnElement]:
     if filter is None:
         return []
@@ -38,18 +41,30 @@ def name_filter_clauses(
     filter_clauses: list[ColumnElement] = []
 
     if starts_with := filter.get("starts_with", None):
-        filter_clauses.append(
-            func.lower(getattr(model, name_column)).like(
-                (f"{normalized_text(starts_with)}%")
+        if normalize:
+            filter_clauses.append(
+                func.lower(getattr(model, name_column)).like(
+                    (f"{normalized_text(starts_with)}%")
+                )
             )
-        )
+        else:
+            filter_clauses.append(
+                func.lower(getattr(model, name_column)).like(
+                    (f"{starts_with.lower()}%")
+                )
+            )
 
     if contains := filter.get("contains", None):
-        filter_clauses.append(
-            func.lower(getattr(model, name_column)).like(
-                (f"%{normalized_text(contains)}%")
+        if normalize:
+            filter_clauses.append(
+                func.lower(getattr(model, name_column)).like(
+                    (f"%{normalized_text(contains)}%")
+                )
             )
-        )
+        else:
+            filter_clauses.append(
+                func.lower(getattr(model, name_column)).like((f"%{contains.lower()}%"))
+            )
 
     return filter_clauses
 

@@ -261,7 +261,7 @@ def origin_hawaii(engine):
 def origin_regions_of_hawaii(engine):
     with Session(engine) as session:
         return session.scalars(
-            select(models.Origin).where(models.Origin._name_n.in_(["kona", "kau"]))
+            select(models.Origin).where(models.Origin.normalized_name.in_(["kona", "kau"]))
         ).all()
 
 

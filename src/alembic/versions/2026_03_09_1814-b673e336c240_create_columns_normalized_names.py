@@ -33,7 +33,7 @@ def create_normalized_column(
     """
 
     if not normalized_column_name:
-        normalized_column_name = f"_{column_name}_n"
+        normalized_column_name = f"normalized_{column_name}"
 
     bind = op.get_bind()
     table_obj = table(
@@ -77,15 +77,15 @@ def create_normalized_column(
 
 def upgrade() -> None:
     """Upgrade schema."""
-    create_normalized_column("origins", "name", "_name_n", nullable=False)
-    create_normalized_column("green_coffees", "name", "_name_n", nullable=False)
-    create_normalized_column("roasted_coffees", "name", "_name_n", nullable=False)
-    create_normalized_column("roasters", "name", "_name_n", nullable=False)
+    create_normalized_column("origins", "name", "normalized_name", nullable=False)
+    create_normalized_column("green_coffees", "name", "normalized_name", nullable=False)
+    create_normalized_column("roasted_coffees", "name", "normalized_name", nullable=False)
+    create_normalized_column("roasters", "name", "normalized_name", nullable=False)
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_column("origins", "_name_n")
-    op.drop_column("green_coffees", "_name_n")
-    op.drop_column("roasted_coffees", "_name_n")
-    op.drop_column("roasters", "_name_n")
+    op.drop_column("origins", "normalized_name")
+    op.drop_column("green_coffees", "normalized_name")
+    op.drop_column("roasted_coffees", "normalized_name")
+    op.drop_column("roasters", "normalized_name")

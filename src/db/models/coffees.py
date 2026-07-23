@@ -7,10 +7,9 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from datetime import datetime
 
-from ..utilities import normalized_text
 from .utilities import representation, getdeepattr
 
-from .base import Base
+from .base import Base, BaseWithNormalizedName
 
 if TYPE_CHECKING:
     from .roasters import Roaster
@@ -24,7 +23,7 @@ class CoffeeTagType(Base):
     description: Mapped[str] = mapped_column(nullable=True)
 
 
-class RoastedCoffee(Base):
+class RoastedCoffee(BaseWithNormalizedName):
     """Objects from the `roasted_coffees` table.
 
     Required attributes:
@@ -62,23 +61,6 @@ class RoastedCoffee(Base):
     }
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    _name: Mapped[str] = mapped_column("name")
-    _name_n: Mapped[str] = mapped_column(
-        comment="`name` column normalized to remove case, accents, punctuation",
-        default=lambda context: normalized_text(
-            context.get_current_parameters()["name"]
-        ),
-    )
-
-    @hybrid_property
-    def name(self) -> str:
-        return self._name
-
-    @name.inplace.setter
-    def name_setter(self, value: str) -> None:
-        self._name = value
-        self._name_n = normalized_text(value)
-
     roaster_id: Mapped[int] = mapped_column(ForeignKey("roasters.id"))
     prices: Mapped[list[dict]] = mapped_column(server_default="[]")
     date_added: Mapped[datetime] = mapped_column(server_default=func.now())
@@ -139,7 +121,7 @@ class RoastedCoffeeTag(Base):
         return representation("RoastedCoffeeTag", fields)
 
 
-class Origin(Base):
+class Origin(BaseWithNormalizedName):
     """List of coffee growing origins
 
     Required attributes:
@@ -170,23 +152,6 @@ class Origin(Base):
     __table_args__ = {"comment": "Data attributed to Cafe Imports."}
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    _name: Mapped[str] = mapped_column("name")
-    _name_n: Mapped[str] = mapped_column(
-        comment="`name` column normalized to remove case, accents, punctuation",
-        default=lambda context: normalized_text(
-            context.get_current_parameters()["name"]
-        ),
-    )
-
-    @hybrid_property
-    def name(self) -> str:
-        return self._name
-
-    @name.inplace.setter
-    def name_setter(self, value: str) -> None:
-        self._name = value
-        self._name_n = normalized_text(value)
-
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("origins.id"))
     country_id: Mapped[str] = mapped_column(ForeignKey("countries.id"))
     processes: Mapped[list[str] | None] = mapped_column(server_default="[]")
@@ -260,7 +225,7 @@ class Country(Base):
         return f"Country(id={self.id}, name={self.name})"
 
 
-class GreenCoffee(Base):
+class GreenCoffee(BaseWithNormalizedName):
     """Objects from the `green_coffees` table.
 
     Required attributes:
@@ -298,23 +263,6 @@ class GreenCoffee(Base):
     __tablename__ = "green_coffees"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    _name: Mapped[str] = mapped_column("name")
-    _name_n: Mapped[str] = mapped_column(
-        comment="`name` column normalized to remove case, accents, punctuation",
-        default=lambda context: normalized_text(
-            context.get_current_parameters()["name"]
-        ),
-    )
-
-    @hybrid_property
-    def name(self) -> str:
-        return self._name
-
-    @name.inplace.setter
-    def name_setter(self, value: str) -> None:
-        self._name = value
-        self._name_n = normalized_text(value)
-
     origin_id: Mapped[int] = mapped_column(ForeignKey("origins.id"))
 
     source: Mapped[str | None] = mapped_column(

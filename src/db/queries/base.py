@@ -51,9 +51,19 @@ class Base(Generic[T]):
 
         return self
 
-    def filter_by_name(self, filter: NameFilter, name_column: str = "_name_n") -> Self:
+    def filter_by_name(
+        self,
+        filter: NameFilter,
+        name_column: str = "normalized_name",
+        normalize: bool = True,
+    ) -> Self:
         self._filters.extend(
-            name_filter_clauses(filter, model=self._model, name_column=name_column)
+            name_filter_clauses(
+                filter,
+                model=self._model,
+                name_column=name_column,
+                normalize=normalize,
+            )
         )
 
         return self

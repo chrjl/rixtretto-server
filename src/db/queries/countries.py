@@ -16,8 +16,10 @@ class Country(Base[models.Country]):
     def __init__(self, *ids: str):
         super().__init__(models.Country, *ids)
 
-    def filter_by_name(self, filter: NameFilter, name_column="name"):
-        return super().filter_by_name(filter, name_column)
+    def filter_by_name(
+        self, filter: NameFilter, name_column: str = "name", normalize: bool = False
+    ):
+        return super().filter_by_name(filter, name_column, normalize=False)
 
     def origin(self):
         """List of `Origin` objects directly corresponding to `Country`.
