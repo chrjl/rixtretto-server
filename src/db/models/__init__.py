@@ -10,3 +10,12 @@ from .coffees import (
     GreenCoffeeTag,
     CoffeeComponent,
 )
+from .service import (
+    Service,
+    Location,
+    ServiceLocationAssociation,
+    MenuItem,
+    MenuItemVariant,
+    Ingredient,
+    MenuItemIngredientAssociation,
+)
