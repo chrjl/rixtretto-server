@@ -1,0 +1,14 @@
+service_name,name,date_added,date_removed,variants,ingredients
+Cafe Saratoga,Jazzmin,2026-06-26,2026-06-26,iced,espresso;jasmine tea syrup;orange blossom water;soda
+Cafe Saratoga,Cherry Espresso Tonic,2026-06-26,2026-06-26,iced,espresso;tonic;cherry;almond
+Cafe Saratoga,Lâche Pas,2026-06-26,2026-06-26,cold brew;hot latte,Steen's syrup
+Cafe Saratoga,Café de Olla,2026-06-26,2026-06-26,cold brew;hot latte,coffee;piloncillo;cinnamon;allspice;clove;star anise
+Cafe Saratoga,The Janet,2026-06-26,2026-06-26,iced,jasmine tea syrup;soda
+Cafe Saratoga,The Renee,2026-06-26,2026-06-26,iced,cherry;almond;soda
+Cafe Saratoga,Latte,2026-06-26,2026-06-26,hot,espresso;milk
+Cafe Saratoga,Espresso,2026-06-26,2026-06-26,hot;iced,espresso
+Cafe Saratoga,Americano,2026-06-26,2026-06-26,hot;iced,espresso;water
+Go Get Em Tiger,Lil' Sweetie,,,iced,espresso;milk;vanilla;cold foam
+Go Get Em Tiger,Almond Macadamia Latte,,,hot;iced,espresso;almond macadamia milk
+Go Get Em Tiger,Iced Honey Matcha Latte,,,hot;iced,matcha;almond macadamia milk;honey
+Go Get Em Tiger,Tumi,,,hot;iced,turmeric;ginger;honey;black pepper;almond macadamia milk

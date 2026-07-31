@@ -1,0 +1,10 @@
+service_name,location_name,association_name,description,address,address_detail,neighborhood,city,state,country_id,date_opened,date_closed
+Go Get Em Tiger,,Fountain Ave,cafe,6344 Fountain,,Hollywood,Los Angeles,CA,US,,
+Go Get Em Tiger,Grand Central Market,Grand Central Market,espresso bar,317 S Broadway,,Downtown,Los Angeles,CA,US,,
+Go Get Em Tiger,,Larchmont Village,cafe,230 N Larchmont,,Larchmont,Los Angeles,CA,US,,
+Go Get Em Tiger,,Los Feliz,cafe,4630 Hollywood,,Los Feliz,Los Angeles,CA,US,,
+Go Get Em Tiger,,Highland Park,cafe,5916 N Figueroa,,Highland Park,Los Angeles,CA,US,,
+Go Get Em Tiger,ROW DTLA,ROW,cafe,777 S Alameda,B2 Suite 184,Downtown,Los Angeles,CA,US,,
+Go Get Em Tiger,One Culver Building,Culver City,cafe,10000 Washington,Suite 103,,Culver City,CA,US,,
+Go Get Em Tiger,Ivy Station,Ivy Station,cafe,8900 Venice,Suite 105,,Culver City,CA,US,,
+Cafe Saratoga,Beverly Grove Courtyard,Birthday Edition,pop-up,632 S Cloverdale,,Mid-Wilshire,Los Angeles,CA,US,2026-06-26,2026-06-26

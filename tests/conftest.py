@@ -10,10 +10,6 @@ from db import models
 from api.main import app
 from bin.seed_countries_regions import generate_country_objects, generate_origin_objects
 
-from bin.seed.seed_roasters import sample_roaster_objects
-from bin.seed.seed_green_coffees import sample_green_coffee_objects
-from bin.seed.seed_roasted_coffees import sample_roasted_coffee_objects
-
 SAMPLE_DATA_PATH = "assets/sample-data.json"
 
 # Set up environment
@@ -29,15 +25,6 @@ elif os.path.exists(".env"):
 def engine(request):
     use_sample_data = request.node.get_closest_marker("use_sample_data")
     echo_marker = request.node.get_closest_marker("echo")
-
-    def seed_sample_data(engine):
-        with Session(engine) as session:
-            session.add_all(sample_roaster_objects())
-            session.add_all(sample_green_coffee_objects(engine))
-            session.commit()
-
-            session.add_all(sample_roasted_coffee_objects(engine))
-            session.commit()
 
     echo = echo_marker and (echo_marker.args[0] is True)
     engine = create_engine(
@@ -55,6 +42,8 @@ def engine(request):
         session.commit()
 
     if use_sample_data and (use_sample_data.args[0] is True):
+        from bin.seed_sample_data import seed_sample_data
+
         seed_sample_data(engine)
 
     yield engine
