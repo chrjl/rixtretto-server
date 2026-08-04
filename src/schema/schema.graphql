@@ -6,6 +6,9 @@ type Query {
   roasters(ids: [ID], filter: Filter): [Roaster]!
   roastedCoffees(ids: [ID], filter: Filter): [RoastedCoffee]!
   greenCoffees(ids: [ID], filter: Filter): [GreenCoffee]!
+
+  coffeeService(ids: [ID], filter: Filter): [CoffeeService]!
+
   hello(name: String): String
 }
 
@@ -68,6 +71,8 @@ enum Category {
 }
 
 input LocationFilter {
+  address: String
+  neighborhood: String
   city: String
   state: String
   countryName: String
@@ -75,6 +80,10 @@ input LocationFilter {
 }
 
 type Location {
+  name: String
+  address: String
+  address_detail: String
+  neighborhood: String
   city: String
   state: String
   country: Country!

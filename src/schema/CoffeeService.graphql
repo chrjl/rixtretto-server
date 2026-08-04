@@ -1,0 +1,15 @@
+type CoffeeService {
+  id: ID
+  name: String
+  roaster: Roaster
+  locations: [CoffeeServiceLocation!]
+
+type CoffeeServiceLocation {
+  name: String
+  description: String
+  location: Location
+
+  dateOpened: String
+  dateClosed: String
+}
+
