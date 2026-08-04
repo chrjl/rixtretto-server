@@ -6,6 +6,7 @@ from .roaster import roaster
 from .green_coffee import green_coffee
 from .roasted_coffee import roasted_coffee
 from .coffee_component import component_association
+from .coffee_service import coffee_service
 
 types = [
     query,
@@ -16,4 +17,5 @@ types = [
     green_coffee,
     roasted_coffee,
     component_association,
+    coffee_service,
 ]

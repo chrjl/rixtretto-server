@@ -117,3 +117,26 @@ def resolve_roasted_coffees(
         result = session.scalars(query.select()).all()
 
     return result
+
+
+@query.field("coffeeService")
+def resolve_coffee_service(
+    _,
+    info: GraphQLResolveInfo,
+    ids: list[int] = [],
+    filter: Filter = {},
+) -> list[models.Service]:
+    Session = info.context["Session"]
+    query = queries.Service(*ids)
+
+    info.context["_filter"] = filter
+    if name_filter := filter.get("name"):
+        query = query.filter_by_name(name_filter)
+    if location_filter := filter.get("location"):
+        query = query.filter_by_location(location_filter)
+
+
+    with Session() as session:
+        result = session.scalars(query.select()).all()
+
+    return result

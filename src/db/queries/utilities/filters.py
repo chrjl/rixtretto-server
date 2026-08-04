@@ -19,9 +19,12 @@ class CoffeeFilter(TypedDict, total=False):
 
 
 class LocationFilter(TypedDict, total=False):
+    address: str
+    neighborhood: str
     city: str
     state: str
     country_code: str
+    country_id: str
     country_name: str
 
 
