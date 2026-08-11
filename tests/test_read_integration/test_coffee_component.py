@@ -112,7 +112,7 @@ class TestColumns:
             }
         """
 
-        filter = {"coffeeDetail": {"profiles": ["single origin"]}}
+        filter = {"profiles": ["single origin"]}
 
         response = client.post(
             "/", json={"query": query, "variables": {"filter": filter}}

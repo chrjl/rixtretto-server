@@ -120,7 +120,7 @@ class TestGreenCoffeeFilters:
         ],
     )
     def test_filter_by_process(self, client, processes, count):
-        filter = {"coffeeDetail": {"processes": processes}}
+        filter = {"processes": processes}
         variables = {"filter": filter}
 
         response = client.post("/", json={"query": self.query, "variables": variables})
@@ -140,7 +140,7 @@ class TestGreenCoffeeFilters:
         ],
     )
     def test_filter_by_variety(self, client, varieties, count):
-        filter = {"coffeeDetail": {"varieties": varieties}}
+        filter = {"varieties": varieties}
         variables = {"filter": filter}
 
         response = client.post("/", json={"query": self.query, "variables": variables})
@@ -154,7 +154,7 @@ class TestGreenCoffeeFilters:
         [(["cocoa"], 2), (["lime"], 2), (["cocoa", "fudge"], 2), (["nothing"], 0)],
     )
     def test_filter_by_tasting(self, client, tasting, count):
-        filter = {"coffeeDetail": {"tasting": tasting}}
+        filter = {"tasting": tasting}
         variables = {"filter": filter}
 
         response = client.post("/", json={"query": self.query, "variables": variables})

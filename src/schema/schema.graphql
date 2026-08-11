@@ -101,7 +101,12 @@ input CoffeeFilter {
 input Filter {
   name: NameFilter
   location: LocationFilter
-  coffeeDetail: CoffeeFilter
+
+  # ...CoffeeFilter
+  profiles: [String!]
+  varieties: [String!]
+  processes: [String!]
+  tasting: [String!]
 }
 
 input CoffeeTagInput {

@@ -81,13 +81,12 @@ def resolve_green_coffees(
     if filter:
         if name := filter.get("name"):
             query = query.filter_by_name(name)
-        if coffee_details := filter.get("coffee_detail"):
-            if processes := coffee_details.get("processes"):
-                query = query.filter_by_process(processes)
-            if varieties := coffee_details.get("varieties"):
-                query = query.filter_by_variety(varieties)
-            if tasting := coffee_details.get("tasting"):
-                query = query.filter_by_tasting(tasting)
+        if processes := filter.get("processes"):
+            query = query.filter_by_process(processes)
+        if varieties := filter.get("varieties"):
+            query = query.filter_by_variety(varieties)
+        if tasting := filter.get("tasting"):
+            query = query.filter_by_tasting(tasting)
 
     with Session() as session:
         result = session.scalars(query.select()).all()
@@ -105,15 +104,14 @@ def resolve_roasted_coffees(
     if filter:
         if name := filter.get("name"):
             query = query.filter_by_name(name)
-        if coffee_details := filter.get("coffee_detail"):
-            if profiles := coffee_details.get("profiles"):
-                query = query.filter_by_profile(profiles)
-            if tasting := coffee_details.get("tasting"):
-                query = query.filter_by_tasting(tasting)
-            if processes := coffee_details.get("processes"):
-                query = query.filter_by_process(processes)
-            if varieties := coffee_details.get("varieties"):
-                query = query.filter_by_variety(varieties)
+        if profiles := filter.get("profiles"):
+            query = query.filter_by_profile(profiles)
+        if tasting := filter.get("tasting"):
+            query = query.filter_by_tasting(tasting)
+        if processes := filter.get("processes"):
+            query = query.filter_by_process(processes)
+        if varieties := filter.get("varieties"):
+            query = query.filter_by_variety(varieties)
 
     with Session() as session:
         result = session.scalars(query.select()).all()

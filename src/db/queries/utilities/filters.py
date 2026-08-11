@@ -25,8 +25,9 @@ class LocationFilter(TypedDict, total=False):
     country_name: str
 
 
-class Filter(NameFilter, CoffeeFilter):
-    pass
+class Filter(CoffeeFilter, total=False):
+    name: NameFilter
+    location: LocationFilter
 
 
 def name_filter_clauses(
