@@ -147,6 +147,88 @@ class TestService:
         # print(json.dumps(result, indent=2))
         assert len(result) == expected_count
 
-    #!TODO
-    def test_relationship_menu(self):
-        pass
+    @pytest.mark.parametrize(
+        "service_name, expected_count",
+        [("Cafe Saratoga", 9), ("Go Get Em Tiger", 4)],
+    )
+    def test_relationship_menu(self, client, service_name, expected_count):
+        query = """
+            query($filter: Filter) {
+                coffeeService(filter: $filter) {
+                    id
+                    name
+                    menu {
+                        name
+                        variants
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": service_name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+
+        result = response.json()["data"]["coffeeService"][0]
+
+        # print(json.dumps(result, indent=2))
+        assert len(result["menu"]) == expected_count
+
+
+@pytest.mark.use_sample_data(True)
+class TestMenuItem:
+    def test_all(self, client):
+        query = """
+            query {
+                menuItems {
+                    name
+                    
+                    service {
+                        name
+                    }
+
+                    variants
+                    dateAdded
+                    dateRemoved
+                    details
+                }
+            }
+        """
+
+        response = client.post("/", json={"query": query})
+        result = response.json()["data"]["menuItems"]
+
+        # print(json.dumps(result, indent=2))
+        assert len(result) == 13
+
+    @pytest.mark.parametrize(
+        "name_filter, expected_result",
+        [
+            (
+                {"contains": "latte"},
+                ["Almond Macadamia Latte", "Iced Honey Matcha Latte", "Latte"],
+            ),
+            ({"starts_with": "lache"}, ["Lâche Pas"]),
+            ({"starts_with": "t"}, ["Tumi", "The Janet", "The Renee"]),
+        ],
+    )
+    def test_filter_by_name(self, client, name_filter, expected_result):
+        query = """
+            query($filter: Filter) {
+                menuItems(filter: $filter) {
+                    name
+                    service {
+                        id
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"name": name_filter}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["menuItems"]
+
+        # print(json.dumps(result, indent=2))
+        assert set([item["name"] for item in result]) == set(expected_result)
