@@ -8,6 +8,7 @@ type Query {
   greenCoffees(ids: [ID], filter: Filter): [GreenCoffee]!
 
   coffeeService(ids: [ID], filter: Filter): [CoffeeService]!
+  menuItems(ids: [ID], filter: Filter): [MenuItem]!
 
   hello(name: String): String
 }

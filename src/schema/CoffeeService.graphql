@@ -4,6 +4,9 @@ type CoffeeService {
   roaster: Roaster
   locations: [CoffeeServiceLocation!]
 
+  menu: [MenuItem]!
+}
+
 type CoffeeServiceLocation {
   name: String
   description: String
@@ -13,3 +16,12 @@ type CoffeeServiceLocation {
   dateClosed: String
 }
 
+type MenuItem {
+  name: String
+  service: CoffeeService!
+
+  variants: [String]!
+  dateAdded: String
+  dateRemoved: String
+  details: JSON
+}
