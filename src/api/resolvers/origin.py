@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from ariadne import ObjectType
-from ariadne.types import GraphQLResolveInfo
 
 # from sqlalchemy.orm import Session
 
@@ -11,6 +10,7 @@ from db import queries
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from graphql import GraphQLResolveInfo
     from typing import Sequence
     from db import models
 
@@ -50,9 +50,7 @@ def resolve_origin_suborigins(
     Session = info.context["Session"]
 
     with Session() as session:
-        result = session.scalars(
-            queries.Origin().filter_by_ids(ids=[origin.id]).get("suborigins")
-        ).all()
+        result = session.scalars(queries.Origin(origin.id).get("suborigins")).all()
 
     return result
 
@@ -77,9 +75,7 @@ def resolve_roasted_coffees_of_origin(
     Session = info.context["Session"]
 
     with Session() as session:
-        return session.scalars(
-            queries.Origin().filter_by_ids(ids=[origin.id]).get("roasted_coffees")
-        ).all()
+        return session.scalars(queries.Origin(origin.id).get("roasted_coffees")).all()
 
 
 @origin.field("greenCoffees")
@@ -89,9 +85,7 @@ def resolve_green_coffees_of_origin(
     Session = info.context["Session"]
 
     with Session() as session:
-        return session.scalars(
-            queries.Origin().filter_by_ids(ids=[origin.id]).get("green_coffees")
-        ).all()
+        return session.scalars(queries.Origin(origin.id).get("green_coffees")).all()
 
 
 @origin.field("roasters")
@@ -103,6 +97,4 @@ def resolve_roasters_of_origin(
     with Session() as session:
         session.add(origin)
 
-        return session.scalars(
-            queries.Origin().filter_by_ids(ids=[origin.id]).get("roasters")
-        ).all()
+        return session.scalars(queries.Origin(origin.id).get("roasters")).all()

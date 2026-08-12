@@ -41,7 +41,7 @@ class TestCountryFilters:
 
     def test_filter_by_ids(self, engine):
         with Session(engine) as session:
-            query = queries.Country().filter_by_ids(ids=["BO", "BR", "BI"])
+            query = queries.Country().filter_by_pkey(ids=["BO", "BR", "BI"])
             result = session.scalars(query.select()).all()
 
             assert len(result) == 3
@@ -49,11 +49,11 @@ class TestCountryFilters:
                 ["Bolivia", "Brazil", "Burundi"]
             )
 
-            query = query.filter_by_ids(ids=["BO"])
+            query = query.filter_by_pkey(ids=["BO"])
             result = session.scalars(query.select()).all()
             assert len(result) == 1
 
-            query = query.filter_by_ids(ids=["BR"])
+            query = query.filter_by_pkey(ids=["BR"])
             result = session.scalars(query.select()).all()
             assert len(result) == 0
 
@@ -87,7 +87,7 @@ class TestCountryFilters:
         with Session(engine) as session:
             query = (
                 queries.Country()
-                .filter_by_ids(ids=["BA", "BO", "BR"])
+                .filter_by_pkey(ids=["BA", "BO", "BR"])
                 .filter_by_name(filter={"contains": "ia"})
             )
 
@@ -106,7 +106,9 @@ class TestCountryFilters:
 class TestCountryProperties:
     def test_origin_ids(self, engine):
         with Session(engine) as session:
-            query = queries.Country().filter_by_ids(["BO", "GT"]).select(["origin_id"])
+            query = (
+                queries.Country().filter_by_pkey(ids=["BO", "GT"]).select(["origin_id"])
+            )
             result = session.scalars(query).all()
 
             control = session.scalars(
@@ -119,7 +121,7 @@ class TestCountryProperties:
 
     def test_suborigins(self, engine):
         with Session(engine) as session:
-            query = queries.Country().filter_by_ids(ids=["GT"])
+            query = queries.Country().filter_by_pkey(ids=["GT"])
             result = session.scalars(query.select()).all()[0].suborigins
 
             assert len(result) == 9
@@ -141,7 +143,7 @@ class TestCountryProperties:
     )
     def test_green_coffees(self, engine, country_id, coffee_name, origin_name):
         with Session(engine) as session:
-            country = queries.Country().filter_by_ids([country_id])
+            country = queries.Country().filter_by_pkey([country_id])
             result = session.scalars(country.get("green_coffees")).all()
 
             assert len(result) == 1
@@ -158,7 +160,7 @@ class TestCountryProperties:
     )
     def test_roasted_coffees(self, engine, country_id, coffee_names):
         with Session(engine) as session:
-            country = queries.Country().filter_by_ids([country_id])
+            country = queries.Country().filter_by_pkey([country_id])
             result = session.scalars(country.get("roasted_coffees")).all()
 
             assert set([r.name for r in result]) == set(coffee_names)
@@ -190,7 +192,7 @@ class TestOriginFilters:
 
     def test_filter_by_ids(self, engine):
         with Session(engine) as session:
-            query = queries.Origin().filter_by_ids(ids=[1, 2, 3])
+            query = queries.Origin().filter_by_pkey(ids=[1, 2, 3])
             result = session.scalars(query.select()).all()
             control = [
                 session.get(models.Origin, 1),
@@ -203,11 +205,11 @@ class TestOriginFilters:
                 [getattr(country, "name") for country in control]
             )
 
-            query = query.filter_by_ids(ids=[1])
+            query = query.filter_by_pkey(ids=[1])
             result = session.scalars(query.select()).all()
             assert len(result) == 1
 
-            query = query.filter_by_ids(ids=[2])
+            query = query.filter_by_pkey(ids=[2])
             result = session.scalars(query.select()).all()
             assert len(result) == 0
 
@@ -231,7 +233,7 @@ class TestOriginFilters:
         with Session(engine) as session:
             query = (
                 queries.Origin()
-                .filter_by_ids(ids=[1, 2, 3])
+                .filter_by_pkey(ids=[1, 2, 3])
                 .filter_by_name(filter={"contains": "ia"})
             )
 
@@ -261,7 +263,9 @@ def origin_hawaii(engine):
 def origin_regions_of_hawaii(engine):
     with Session(engine) as session:
         return session.scalars(
-            select(models.Origin).where(models.Origin.normalized_name.in_(["kona", "kau"]))
+            select(models.Origin).where(
+                models.Origin.normalized_name.in_(["kona", "kau"])
+            )
         ).all()
 
 
@@ -409,7 +413,7 @@ class TestGreenCoffeeFilters:
 
     def test_filter_by_ids(self, engine, base_query):
         with Session(engine) as session:
-            query = base_query.filter_by_ids(ids=[1, 2, 3])
+            query = base_query.filter_by_pkey(ids=[1, 2, 3])
             result = session.scalars(query.select()).all()
             control = [
                 session.get(self.model, 1),
@@ -422,11 +426,11 @@ class TestGreenCoffeeFilters:
                 [getattr(coffee, "name") for coffee in control]
             )
 
-            query = query.filter_by_ids(ids=[1])
+            query = query.filter_by_pkey(ids=[1])
             result = session.scalars(query.select()).all()
             assert len(result) == 1
 
-            query = query.filter_by_ids(ids=[2])
+            query = query.filter_by_pkey(ids=[2])
             result = session.scalars(query.select()).all()
             assert len(result) == 0
 
@@ -613,7 +617,7 @@ class TestRoastedCoffeeFilters:
 
     def test_filter_by_ids(self, engine, base_query):
         with Session(engine) as session:
-            query = base_query.filter_by_ids(ids=[1, 2, 3])
+            query = base_query.filter_by_pkey(ids=[1, 2, 3])
             result = session.scalars(query.select()).all()
             control = [
                 session.get(self.model, 1),
@@ -626,11 +630,11 @@ class TestRoastedCoffeeFilters:
                 [getattr(coffee, "name") for coffee in control]
             )
 
-            query = query.filter_by_ids(ids=[1])
+            query = query.filter_by_pkey(ids=[1])
             result = session.scalars(query.select()).all()
             assert len(result) == 1
 
-            query = query.filter_by_ids(ids=[2])
+            query = query.filter_by_pkey(ids=[2])
             result = session.scalars(query.select()).all()
             assert len(result) == 0
 

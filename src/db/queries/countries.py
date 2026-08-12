@@ -57,7 +57,7 @@ class Country(Base[models.Country]):
 
         return (
             queries.Origin()
-            .filter_by_ids(select(suborigin_ids_cte(self.select(["origin_id"]))))
+            .filter_by_pkey(select(suborigin_ids_cte(self.select(["origin_id"]))))
             .get("roasted_coffees")
         )
 
@@ -66,6 +66,6 @@ class Country(Base[models.Country]):
 
         return (
             queries.Origin()
-            .filter_by_ids(select(suborigin_ids_cte(self.select(["origin_id"]))))
+            .filter_by_pkey(select(suborigin_ids_cte(self.select(["origin_id"]))))
             .get("green_coffees")
         )

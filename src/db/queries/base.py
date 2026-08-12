@@ -16,26 +16,35 @@ T = TypeVar("T", bound=models.Base)
 
 
 class Base(Generic[T]):
-    def __init__(self, model: Type[T], *ids: str | int):
+    def __init__(
+        self,
+        model: Type[T],
+        *ids: tuple[str | int] | str | int,
+        pkey: str = "id",
+    ):
         self._model = model
         self._filters: list[ColumnElement] = []
         self._joins: list[Join] = []
+        self._pkey: str = pkey
 
         if ids:
-            self.filter_by_ids(ids)
+            self.filter_by_pkey(ids, pkey=pkey)
 
-    def select(self, columns: list[str] | None = None) -> Select[tuple[T]]:
+    def select(
+        self,
+        columns: list[str] | None = None,
+    ) -> Select[tuple[T]]:
         if columns is None:
             return (
                 select(self._model)
-                .group_by(self._model.id)
+                .group_by(getattr(self._model, self._pkey))
                 .select_from(self._model, *self._joins)
                 .where(*self._filters)
             )
 
         return (
             select(*[getattr(self._model, c) for c in columns])
-            .group_by(self._model.id)
+            .group_by(getattr(self._model, self._pkey))
             .select_from(self._model, *self._joins)
             .where(*self._filters)
         )
@@ -46,8 +55,12 @@ class Base(Generic[T]):
 
         return getattr(self, attribute)()
 
-    def filter_by_ids(self, ids: Sequence[str | int] | Select[tuple[T]]) -> Self:
-        self._filters.append(getattr(self._model, "id").in_(ids))
+    def filter_by_pkey(
+        self,
+        ids: Sequence[tuple[str | int] | str | int] | Select[tuple[T]],
+        pkey: str = "id",
+    ) -> Self:
+        self._filters.append(getattr(self._model, pkey).in_(ids))
 
         return self
 

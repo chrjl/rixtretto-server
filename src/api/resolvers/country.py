@@ -20,9 +20,7 @@ def resolve_origin_of_country(
     Session = info.context["Session"]
 
     with Session() as session:
-        result = session.scalar(
-            queries.Country().filter_by_ids([country.id]).get("origin")
-        )
+        result = session.scalar(queries.Country(country.id).get("origin"))
 
     return result
 
