@@ -1,5 +1,6 @@
 import pytest
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from src.db import queries
 
@@ -99,3 +100,130 @@ class TestMenuItem:
 
             for menu_item in service_filter_result:
                 assert menu_item.service.name == "Go Get Em Tiger"
+
+    @pytest.mark.parametrize(
+        "service_name, menu_item_name, ingredients",
+        [
+            ("Cafe Saratoga", "Americano", ["espresso", "water"]),
+            (
+                "Go Get Em Tiger",
+                "Tumi",
+                ["turmeric", "ginger", "honey", "blackpepper", "almondmacadamiamilk"],
+            ),
+            (
+                "Go Get Em Tiger",
+                "Lil Sweetie",
+                ["espresso", "milk", "vanilla", "coldfoam"],
+            ),
+        ],
+    )
+    def test_relationship_ingredients(
+        self, engine, service_name, menu_item_name, ingredients
+    ):
+        service_id_subq = (
+            queries.Service()
+            .filter_by_name({"starts_with": service_name})
+            .select(["id"])
+            .subquery()
+        )
+
+        query = (
+            queries.MenuItem()
+            .filter_by_service(select(service_id_subq))
+            .filter_by_name({"starts_with": menu_item_name})
+            .select()
+        )
+
+        with Session(engine) as session:
+            result = [
+                ingredient.normalized_name
+                for ingredient in session.scalars(query).one().ingredients
+            ]
+            assert set(result) == set(ingredients)
+
+
+@pytest.mark.use_sample_data(True)
+class TestIngredient:
+    def test_select_all(self, engine):
+        with Session(engine) as session:
+            result = session.scalars(queries.Ingredient().select()).all()
+            assert len(result) == 32
+
+    @pytest.mark.parametrize(
+        "name_filter,expected_count",
+        [
+            ({"starts_with": "cold"}, 2),
+            ({"contains": "milk"}, 2),
+        ],
+    )
+    def test_filter_by_name(self, engine, name_filter, expected_count):
+        with Session(engine) as session:
+            query = queries.Ingredient().filter_by_name(name_filter).select()
+            result = session.scalars(query).all()
+
+            assert len(result) == expected_count
+
+    @pytest.mark.parametrize(
+        "parent_name, children_names",
+        [
+            ("coffee", ["espresso", "cold brew"]),
+            ("espresso", ["single-origin espresso"]),
+        ],
+    )
+    def test_parent_child_relationships(self, engine, parent_name, children_names):
+        with Session(engine) as session:
+            parent = session.scalar(
+                queries.Ingredient()
+                .filter_by_name({"starts_with": parent_name})
+                .select()
+            )
+
+            assert parent
+            assert set([child.name for child in parent.children]) == set(children_names)
+
+            for child_name in children_names:
+                child = session.scalar(
+                    queries.Ingredient()
+                    .filter_by_name({"starts_with": child_name})
+                    .select()
+                )
+
+                assert child
+                assert child.parent
+                assert child.parent.name == parent_name
+
+    @pytest.mark.parametrize(
+        "ingredient_name, descendants",
+        [
+            ("coffee", ["espresso", "cold brew", "single-origin espresso"]),
+            ("milk", []),
+        ],
+    )
+    def test_descendants(self, engine, ingredient_name, descendants):
+        query = (
+            queries.Ingredient()
+            .filter_by_name({"starts_with": ingredient_name})
+            .get("descendants")
+        )
+
+        with Session(engine) as session:
+            result = session.scalars(query).all()
+            assert set([ingredient.name for ingredient in result]) == set(descendants)
+
+    @pytest.mark.parametrize(
+        "ingredient_name, ancestors",
+        [
+            ("single-origin espresso", ["espresso", "coffee"]),
+            ("milk", []),
+        ],
+    )
+    def test_ancestors(self, engine, ingredient_name, ancestors):
+        query = (
+            queries.Ingredient()
+            .filter_by_name({"starts_with": ingredient_name})
+            .get("ancestors")
+        )
+
+        with Session(engine) as session:
+            result = session.scalars(query).all()
+            assert set([ingredient.name for ingredient in result]) == set(ancestors)

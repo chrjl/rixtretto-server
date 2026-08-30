@@ -232,3 +232,249 @@ class TestMenuItem:
 
         # print(json.dumps(result, indent=2))
         assert set([item["name"] for item in result]) == set(expected_result)
+
+    @pytest.mark.parametrize(
+        "service_name, menu_item_name, ingredient_names",
+        [
+            (
+                "Go Get Em Tiger",
+                "Almond Macadamia Latte",
+                ["espresso", "almond macadamia milk"],
+            ),
+            (
+                "Cafe Saratoga",
+                "Jazzmin",
+                ["espresso", "jasmine tea syrup", "orange blossom water", "soda"],
+            ),
+        ],
+    )
+    def test_recipe(self, client, service_name, menu_item_name, ingredient_names):
+        query = """
+            query($filter: Filter) {
+                coffeeService(filter: $filter) {
+                    name
+                    menu {
+                        name
+                        recipe {
+                            name
+                        }
+                    }
+                }
+            }
+        """
+
+        variables = {
+            "filter": {
+                "name": {"starts_with": service_name},
+                "menu": {"starts_with": menu_item_name},
+            }
+        }
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["coffeeService"][0]["menu"][0]["recipe"]
+
+        assert set([ingredient["name"] for ingredient in result]) == set(
+            ingredient_names
+        )
+
+
+@pytest.mark.use_sample_data(True)
+class TestIngredient:
+    @pytest.mark.parametrize("count", (32,))
+    def test_all(self, client, count):
+        query = """
+            query {
+                ingredients {
+                    name
+                }
+            }
+        """
+
+        response = client.post("/", json={"query": query})
+        result = response.json()["data"]["ingredients"]
+
+        assert len(result) == count
+
+    @pytest.mark.parametrize(
+        "search, name",
+        [("steen", "Steen's syrup"), ("single o", "single-origin espresso")],
+    )
+    def test_filter_by_name(self, client, search, name):
+        query = """
+            query($filter: Filter) {
+                ingredients(filter: $filter) {
+                    name
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": search}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["ingredients"][0]
+
+        assert result["name"] == name
+
+    @pytest.mark.parametrize(
+        "name, parent_name",
+        [
+            ("single-origin espresso", "espresso"),
+            ("espresso", "coffee"),
+        ],
+    )
+    def test_relationship_parent(self, client, name, parent_name):
+        query = """
+            query($filter: Filter) {
+                ingredients(filter: $filter) {
+                    name
+                    parent {
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["ingredients"][0]
+
+        assert result["name"] == name
+        assert result["parent"]["name"] == parent_name
+
+    @pytest.mark.parametrize(
+        "name, children_names",
+        [
+            ("coffee", ["espresso", "cold brew"]),
+            ("espresso", ["single-origin espresso"]),
+            ("single-origin espresso", []),
+        ],
+    )
+    def test_relationship_children(self, client, name, children_names):
+        query = """
+            query($filter: Filter) {
+                ingredients(filter: $filter) {
+                    name
+                    children {
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["ingredients"][0]
+
+        assert result["name"] == name
+        assert set([ingredient["name"] for ingredient in result["children"]]) == set(
+            children_names
+        )
+
+    @pytest.mark.parametrize(
+        "name, ancestor_names",
+        [
+            ("single-origin espresso", ["espresso", "coffee"]),
+            ("espresso", ["coffee"]),
+        ],
+    )
+    def test_relationship_ancestors(self, client, name, ancestor_names):
+        query = """
+            query($filter: Filter) {
+                ingredients(filter: $filter) {
+                    name
+                    ancestors {
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["ingredients"][0]
+
+        assert result["name"] == name
+        assert set([ingredient["name"] for ingredient in result["ancestors"]]) == set(
+            ancestor_names
+        )
+
+    @pytest.mark.parametrize(
+        "name, descendant_names",
+        [
+            ("coffee", ["cold brew", "espresso", "single-origin espresso"]),
+            ("espresso", ["single-origin espresso"]),
+        ],
+    )
+    def test_relationship_descendants(self, client, name, descendant_names):
+        query = """
+            query($filter: Filter) {
+                ingredients(filter: $filter) {
+                    name
+                    descendants {
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["ingredients"][0]
+
+        assert result["name"] == name
+        assert set([ingredient["name"] for ingredient in result["descendants"]]) == set(
+            descendant_names
+        )
+
+    @pytest.mark.parametrize(
+        "name, menu_item_names",
+        [
+            (
+                "espresso",
+                [
+                    "Jazzmin",
+                    "Cherry Espresso Tonic",
+                    "Latte",
+                    "Espresso",
+                    "Americano",
+                    "Lil' Sweetie",
+                    "Almond Macadamia Latte",
+                ],
+            ),
+            (
+                "nut",
+                [
+                    "Cherry Espresso Tonic",
+                    "The Renee",
+                    "Almond Macadamia Latte",
+                    "Iced Honey Matcha Latte",
+                    "Tumi",
+                ],
+            ),
+        ],
+    )
+    def test_relationship_menu_items(self, client, name, menu_item_names):
+        query = """
+            query($filter: Filter) {
+                ingredients(filter: $filter) {
+                    name
+                    menuItems {
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["ingredients"][0]
+
+        assert result["name"] == name
+        assert set([ingredient["name"] for ingredient in result["menuItems"]]) == set(
+            menu_item_names
+        )
