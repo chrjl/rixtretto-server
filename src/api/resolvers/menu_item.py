@@ -32,3 +32,14 @@ def resolve_service(
     with Session() as session:
         session.add(menu_item)
         return menu_item.service
+
+
+@menu_item.field("recipe")
+def resolve_recipe(
+    menu_item: models.MenuItem, info: GraphQLResolveInfo
+) -> list[models.Ingredient]:
+    Session = info.context["Session"]
+
+    with Session() as session:
+        session.add(menu_item)
+        return menu_item.ingredients

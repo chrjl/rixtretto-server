@@ -155,3 +155,20 @@ def resolve_menu_item(
         result = session.scalars(query.select()).all()
 
     return result
+
+
+@query.field("ingredients")
+def resolve_ingredients(
+    _, info: GraphQLResolveInfo, ids: list[str] = [], filter: Filter = {}
+) -> list[models.Ingredient]:
+    Session = info.context["Session"]
+
+    query = queries.Ingredient(*ids)
+
+    if name_filter := filter.get("name"):
+        query = query.filter_by_name(name_filter)
+
+    with Session() as session:
+        result = session.scalars(query.select()).all()
+
+    return result
