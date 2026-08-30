@@ -9,6 +9,7 @@ type Query {
 
   coffeeService(ids: [ID], filter: Filter): [CoffeeService]!
   menuItems(ids: [ID], filter: Filter): [MenuItem]!
+  ingredients(ids: [ID], filter: Filter): [Ingredient]!
 
   hello(name: String): String
 }
@@ -117,6 +118,8 @@ input Filter {
   varieties: [String!]
   processes: [String!]
   tasting: [String!]
+
+  menu: NameFilter
 }
 
 input CoffeeTagInput {

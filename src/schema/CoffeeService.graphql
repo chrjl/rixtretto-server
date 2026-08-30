@@ -21,7 +21,19 @@ type MenuItem {
   service: CoffeeService!
 
   variants: [String]!
+  recipe: [Ingredient!]
+
   dateAdded: String
   dateRemoved: String
   details: JSON
+}
+
+type Ingredient {
+  name: String!
+  parent: Ingredient
+  children: [Ingredient]!
+  ancestors: [Ingredient]!
+  descendants: [Ingredient]!
+
+  menuItems: [MenuItem]!
 }
