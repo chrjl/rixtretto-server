@@ -46,6 +46,8 @@ class Service(BaseWithNormalizedName):
     roaster: Mapped["Roaster | None"] = relationship()
     menu_items: Mapped[list["MenuItem"]] = relationship(back_populates="service")
 
+    def __repr__(self):
+        return representation("Service", {"id": self.id, "name": self.name})
 
 
 class Location(Base):
@@ -63,6 +65,9 @@ class Location(Base):
         city(str)
         state(str)
         country_id(str)
+
+    Relationships:
+        service_associations(list[ServiceLocationAssociation])
     """
 
     __tablename__ = "locations"
@@ -75,12 +80,43 @@ class Location(Base):
     state: Mapped[str | None]
     country_id: Mapped[str] = mapped_column(ForeignKey("countries.id"))
 
-    service_associations: Mapped["ServiceLocationAssociation"] = relationship(
+    service_associations: Mapped[list["ServiceLocationAssociation"]] = relationship(
         back_populates="location"
     )
 
+    def __repr__(self):
+        return representation(
+            title="ServiceLocation",
+            fields={
+                "name": self.name,
+                "city": self.city,
+                "state": self.state,
+                "country": self.country_id,
+            },
+        )
+
 
 class ServiceLocationAssociation(Base):
+    """
+    Association table for mapping of locations to services.
+
+    Required attributes:
+        service_id(int, FK)
+        location_id(int, FK)
+
+    Optional attributes:
+        address_detail(str): unit number, etc.
+        neighborhood(str)
+        name(str): the company's name for the specific location
+        description(str): e.g. coffeeshop, popup, restaurant
+        date_opened(datetime)
+        date_closed(datetime)
+
+    Relationships:
+        location(Location)
+        service(Service)
+    """
+
     __tablename__ = "service_location_associations"
 
     service_id: Mapped[int] = mapped_column(ForeignKey("service.id"), primary_key=True)
@@ -101,6 +137,20 @@ class ServiceLocationAssociation(Base):
 
     location: Mapped["Location"] = relationship(back_populates="service_associations")
     service: Mapped["Service"] = relationship(back_populates="location_associations")
+
+    def __repr__(self):
+        service = getdeepattr(self, "service.name")
+        location = getdeepattr(self, "location.name")
+
+        return representation(
+            "ServiceLocationAssociation",
+            fields={
+                "service": service,
+                "service_id": self.service_id if not service else None,
+                "location": location,
+                "location_id": self.location_id if not location else None,
+            },
+        )
 
 
 class MenuItem(BaseWithNormalizedName):
@@ -147,6 +197,17 @@ class MenuItem(BaseWithNormalizedName):
         relationship()
     )
 
+    def __repr__(self):
+        service = getdeepattr(self, "service.name")
+        relationship_fields = {
+            "service": service,
+            "service_id": getattr(self, "service_id", None) if not service else None,
+        }
+
+        return representation(
+            "MenuItem",
+            {**relationship_fields, "name": self.name},
+        )
 
 
 class MenuItemVariant(Base):
@@ -260,3 +321,11 @@ class MenuItemIngredientAssociation(Base):
     )
     menu_item: Mapped["MenuItem"] = relationship(viewonly=True)
     ingredient: Mapped["Ingredient"] = relationship(viewonly=True)
+
+    def __repr__(self):
+        fields = {
+            "service": self.service.name,
+            "menu_item": self.menu_item.name,
+            "ingredient": self.ingredient,
+        }
+        return representation("MenuItemIngredientAssociation", fields)
