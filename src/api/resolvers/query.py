@@ -135,6 +135,21 @@ def resolve_coffee_service(
     if location_filter := filter.get("location"):
         query = query.filter_by_location(location_filter)
 
+    with Session() as session:
+        result = session.scalars(query.select()).all()
+
+    return result
+
+
+@query.field("menuItems")
+def resolve_menu_item(
+    _, info: GraphQLResolveInfo, ids: list[str] = [], filter: Filter = {}
+) -> list[models.MenuItem]:
+    Session = info.context["Session"]
+    query = queries.MenuItem(*ids)
+
+    if name_filter := filter.get("name"):
+        query = query.filter_by_name(name_filter)
 
     with Session() as session:
         result = session.scalars(query.select()).all()

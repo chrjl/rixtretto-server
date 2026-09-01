@@ -1,9 +1,14 @@
 from ariadne import ObjectType
 
-from db.queries.utilities.filters import Filter, LocationFilter
+from db.queries.utilities.filters import Filter, LocationFilter, NameFilter
 from db import models, queries
 
 coffee_service = ObjectType("CoffeeService")
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from graphql import GraphQLResolveInfo
 
 
 @coffee_service.field("roaster")
@@ -20,7 +25,7 @@ def resolve_roaster(service: models.Service, info):
 
 
 @coffee_service.field("locations")
-def resolve_locations(service: models.Service, info):
+def resolve_locations(service: models.Service, info: GraphQLResolveInfo):
     Session = info.context["Session"]
 
     filter: Filter = info.context.get("_filter", {})
@@ -52,3 +57,22 @@ def resolve_locations(service: models.Service, info):
         ]
 
         return result
+
+
+@coffee_service.field("menu")
+def resolve_menu_items(service: models.Service, info: GraphQLResolveInfo):
+    Session = info.context["Session"]
+    filter: Filter = info.context.get("_filter", {})
+    menu_filter: NameFilter = filter.get("menu", {})
+
+    with Session() as session:
+        if menu_filter:
+            return session.scalars(
+                queries.MenuItem()
+                .filter_by_service([service.id])
+                .filter_by_name(menu_filter)
+                .select()
+            ).all()
+
+        session.add(service)
+        return service.menu_items
