@@ -52,7 +52,7 @@ Migrate tables and (optionally) seed initial entries
 
 ```console
 alembic upgrade head
-bin/seed.py --json sample-data.json
+python -m bin.seed_sample_data
 ```
 
 ### Set up an in-memory database for testing
@@ -64,7 +64,12 @@ bin/seed.py --json sample-data.json
 ```python
 from db.models import Base
 
-engine = sqlalchemy.create_engine("sqlite://", echo=True)
+engine = create_engine(
+    "sqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+    echo=echo,
+)
 Base.metadata.create_all(engine)
 ```
 
