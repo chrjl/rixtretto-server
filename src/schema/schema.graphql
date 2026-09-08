@@ -126,38 +126,3 @@ input CoffeeTagInput {
   type: String!
   values: [String]
 }
-
-type Country {
-  id: ID!
-  name: String!
-  longName: String!
-
-  origin: Origin
-
-  "List of roasters that roast coffees from origins within the given country."
-  roasters: [Roaster]!
-  roastedCoffees: [RoastedCoffee]!
-  greenCoffees: [GreenCoffee]!
-}
-
-type Origin {
-  id: ID!
-  type: String!
-  name: String!
-  processes: [String]!
-  varieties: [String]!
-  harvest_start: Int
-  harvest_end: Int
-  details: JSON
-
-  parent: Origin
-  children: [Origin]!
-  suborigins: [Origin]!
-  country: Country!
-  roastedCoffees(filter: Filter): [RoastedCoffee]!
-  greenCoffees(filter: Filter): [GreenCoffee]!
-
-  "List of roasters that roast coffees from the given origin."
-  roasters: [Roaster]!
-  # roasters(filter: Filter): [Roaster]!
-}
