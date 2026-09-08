@@ -4,7 +4,20 @@ type CoffeeService {
   roaster: Roaster
   locations: [CoffeeServiceLocation!]
 
+  "Menu of drinks available in service."
   menu: [MenuItem]!
+
+  "Menu of roasted coffees in service."
+  coffees: [RoastedCoffee]!
+
+  "List of origins of roasted coffees in service."
+  origins: [Origin]!
+
+  "List of processes of component green coffees of roasted coffees in service."
+  processes: [String]!
+
+  "List of varieties of component green coffees of roasted coffees in service."
+  varieties: [String]!
 }
 
 type CoffeeServiceLocation {

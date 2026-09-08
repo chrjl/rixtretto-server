@@ -30,4 +30,7 @@ type Origin {
 
   "List of roasters that roast coffees from the given origin."
   roasters: [Roaster]!
+
+  "List of `CoffeeService` that serve coffees from the parent `Origin`."
+  service: [CoffeeService]!
 }

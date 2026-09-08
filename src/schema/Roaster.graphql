@@ -6,6 +6,9 @@ type Roaster {
   details: JSON
 
   roastedCoffees: [RoastedCoffee]!
+
+  "List of service that serve `RoastedCoffee`s from specified `Roaster`."
+  service: [CoffeeService]!
 }
 
 input RoasterInput {
