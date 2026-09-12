@@ -10,6 +10,7 @@ from .utilities import representation, getdeepattr
 
 if TYPE_CHECKING:
     from .roasters import Roaster
+    from db.models import RoastedCoffee
 
 
 class Service(BaseWithNormalizedName):
@@ -26,6 +27,8 @@ class Service(BaseWithNormalizedName):
     Relationships:
         roaster(Roaster)
         locations(list[Location])
+        roasted_coffees(list[RoastedCoffee]): list of roasted_coffees served
+        coffee_associations(list[RoastedCoffeeAssociation])
     """
 
     __tablename__ = "service"
@@ -45,6 +48,13 @@ class Service(BaseWithNormalizedName):
     )
     roaster: Mapped["Roaster | None"] = relationship()
     menu_items: Mapped[list["MenuItem"]] = relationship(back_populates="service")
+    coffee_associations: Mapped[list["ServiceCoffeeAssociation"]] = relationship(
+        back_populates="service"
+    )
+    roasted_coffees: Mapped[list["RoastedCoffee"]] = relationship(
+        secondary="service_coffee_associations",
+        overlaps="coffee_associations, roasted_coffee, service",
+    )
 
     def __repr__(self):
         return representation("Service", {"id": self.id, "name": self.name})
@@ -149,6 +159,57 @@ class ServiceLocationAssociation(Base):
                 "service_id": self.service_id if not service else None,
                 "location": location,
                 "location_id": self.location_id if not location else None,
+            },
+        )
+
+
+class ServiceCoffeeAssociation(Base):
+    """
+    Association table for mapping of roasted coffees to services.
+
+    Required attributes:
+        service_id(int, FK)
+        roasted_coffee_id(int, FK)
+
+    Optional attributes:
+        details(JSON)
+        date_opened(datetime)
+        date_closed(datetime)
+
+    Relationships:
+        roasted_coffee(RoastedCoffee)
+        service(Service)
+    """
+
+    __tablename__ = "service_coffee_associations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    service_id: Mapped[int] = mapped_column(ForeignKey("service.id"))
+    roasted_coffee_id: Mapped[int] = mapped_column(ForeignKey("roasted_coffees.id"))
+
+    description: Mapped[str | None] = mapped_column(
+        comment="e.g. coffeeshop, popup, restaurant"
+    )
+    details: Mapped[dict] = mapped_column(server_default="{}")
+    date_added: Mapped[datetime | None]
+    date_removed: Mapped[datetime | None]
+
+    roasted_coffee: Mapped["RoastedCoffee"] = relationship()
+    service: Mapped["Service"] = relationship(back_populates="coffee_associations")
+
+    def __repr__(self):
+        service = getdeepattr(self, "service.name")
+        roasted_coffee = getdeepattr(self, "roasted_coffee.name")
+
+        return representation(
+            "ServiceCoffeeAssociation",
+            fields={
+                "service": service,
+                "service_id": self.service_id if not service else None,
+                "roasted_coffee": roasted_coffee,
+                "roasted_coffee_id": (
+                    self.roasted_coffee_id if not roasted_coffee else None
+                ),
             },
         )
 

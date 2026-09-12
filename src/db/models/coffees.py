@@ -13,6 +13,7 @@ from .base import Base, BaseWithNormalizedName
 
 if TYPE_CHECKING:
     from .roasters import Roaster
+    from db.models import Service
 
 
 class CoffeeTagType(Base):
@@ -36,6 +37,7 @@ class RoastedCoffee(BaseWithNormalizedName):
         tags(list[RoastedCoffeeTag])
         component_associations(list[CoffeeComponent])
         components(list[GreenCoffee]): association proxy through `component_associations`
+        service(list[Service]): list of service that serve this coffee
 
     Optional attributes:
         date_added(datetime, server default)
@@ -84,6 +86,9 @@ class RoastedCoffee(BaseWithNormalizedName):
         "component_associations",
         "origin",
         creator=lambda o: CoffeeComponent(origin=o),
+    )
+    service: Mapped[list[Service]] = relationship(
+        secondary="service_coffee_associations", viewonly=True
     )
 
     def __repr__(self):

@@ -14,6 +14,7 @@ from .service import (
     Service,
     Location,
     ServiceLocationAssociation,
+    ServiceCoffeeAssociation,
     MenuItem,
     MenuItemVariant,
     Ingredient,
