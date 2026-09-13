@@ -7,7 +7,7 @@ def service_roaster_association_data(path):
     service_roaster_associations = {}
 
     with open(path + "service-roaster-associations.csv") as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(csvfile, quoting=csv.QUOTE_NOTNULL)
 
         for row in reader:
             service_roaster_associations[row["service_name"]] = row["roaster_name"]
@@ -19,7 +19,7 @@ def service_location_data(path):
     service_locations = {}
 
     with open(path + "service-locations.csv") as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(csvfile, quoting=csv.QUOTE_NOTNULL)
 
         for row in reader:
             if (service_name := row["service_name"]) not in service_locations:

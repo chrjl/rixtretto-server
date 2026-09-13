@@ -14,7 +14,7 @@ def green_coffee_data(path):
         details_lookup[row["name"]] = row["details"]
 
     with open(path + "green-coffee.csv") as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(csvfile, quoting=csv.QUOTE_NOTNULL)
         for row in reader:
             for column in list_columns:
                 row[column] = row[column].split(";") if row.get(column) else []
@@ -35,15 +35,20 @@ def sample_green_coffee_objects(engine):
     from sqlalchemy import select
     from sqlalchemy.orm import Session
     from db.models import Origin, GreenCoffee, GreenCoffeeTag
+    from db import queries
 
     green_coffee_objs = []
 
     for green_coffee in sample_green_coffee_data():
         if origin_name := green_coffee.get("origin_name"):
-            query = select(Origin.id).where(Origin._name == origin_name)
+            query = (
+                queries.Origin()
+                .filter_by_name({"starts_with": origin_name})
+                .select(["id"])
+            )
 
             with Session(engine) as session:
-                origin_id = session.scalar(query)
+                origin_id = session.scalars(query).one()
         else:
             origin_id = None
 

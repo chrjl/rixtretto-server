@@ -13,7 +13,7 @@ def roaster_data(path):
         details_lookup[row["name"]] = row["details"]
 
     with open(path + "roasters.csv") as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(csvfile, quoting=csv.QUOTE_NOTNULL)
         for row in reader:
             if (name := row["name"]) in details_lookup:
                 row["details"] = details_lookup[name]
