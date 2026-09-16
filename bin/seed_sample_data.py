@@ -3,7 +3,10 @@ from sqlalchemy.orm import Session
 from bin.seed.seed_roasters import sample_roaster_objects
 from bin.seed.seed_green_coffees import sample_green_coffee_objects
 from bin.seed.seed_roasted_coffees import sample_roasted_coffee_objects
-from bin.seed.seed_service import sample_service_objects
+from bin.seed.seed_service import (
+    sample_service_objects,
+    sample_service_coffee_association_objects,
+)
 from bin.seed.seed_menus import sample_ingredient_objects, sample_menu_item_objects
 
 
@@ -17,6 +20,9 @@ def seed_sample_data(engine):
         session.commit()
 
         session.add_all(sample_service_objects(engine))
+        session.commit()
+
+        session.add_all(sample_service_coffee_association_objects(engine))
         session.commit()
 
         session.add_all(sample_ingredient_objects(engine))

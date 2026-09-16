@@ -50,6 +50,25 @@ def service_location_data(path):
     ]
 
 
+def service_coffee_association_data(path):
+    service_coffee_associations = []
+
+    with open(path + "service-coffee-associations.csv") as csvfile:
+        reader = csv.DictReader(csvfile, quoting=csv.QUOTE_NOTNULL)
+
+        for row in reader:
+            service_coffee_associations.append(
+                {
+                    "service_name": row["service_name"],
+                    "roasted_coffee_name": row["roasted_coffee_name"],
+                    "date_added": row.get("date_added"),
+                    "date_removed": row.get("date_removed"),
+                }
+            )
+
+    return service_coffee_associations
+
+
 def sample_service_objects(engine):
     from sqlalchemy.orm import Session
     from db.models import Service, Location, ServiceLocationAssociation
@@ -116,10 +135,56 @@ def sample_service_objects(engine):
     return result
 
 
+def sample_service_coffee_association_objects(engine):
+    from sqlalchemy.orm import Session
+
+    from db import queries
+    from db.models import ServiceCoffeeAssociation
+
+    data = service_coffee_association_data(SAMPLE_DATA_DIR)
+    result = []
+
+    for row in data:
+        service_name = row["service_name"]
+        roasted_coffee_name = row["roasted_coffee_name"]
+
+        with Session(engine) as session:
+            service_id = session.scalar(
+                queries.Service()
+                .filter_by_name({"starts_with": service_name})
+                .select(["id"])
+            )
+
+            roasted_coffee_id = session.scalar(
+                queries.RoastedCoffee()
+                .filter_by_name({"starts_with": roasted_coffee_name})
+                .select(["id"])
+            )
+
+        result.append(
+            ServiceCoffeeAssociation(
+                service_id=service_id,
+                roasted_coffee_id=roasted_coffee_id,
+                date_added=(
+                    datetime.fromisoformat(row["date_added"])
+                    if row.get("date_added") is not None
+                    else None
+                ),
+                date_removed=(
+                    datetime.fromisoformat(row["date_removed"])
+                    if row.get("date_removed") is not None
+                    else None
+                ),
+            )
+        )
+
+    return result
+
+
 if __name__ == "__main__":
     from sqlalchemy.orm import Session
     from db.main import engine
 
     with Session(engine) as session:
-        session.add_all(sample_service_objects(engine))
+        session.add_all(sample_service_coffee_association_objects(engine))
         session.commit()
