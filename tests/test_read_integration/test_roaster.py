@@ -27,13 +27,12 @@ class TestRoasterColumns:
     }
     """
 
-    @pytest.mark.parametrize("count", [2])
-    def test_all_roasters(self, client, count):
+    def test_all_roasters(self, client, roaster_count):
         response = client.post("/", json={"query": self.query})
         result = response.json()["data"]["roasters"]
 
         assert response.status_code == 200
-        assert len(result) == count
+        assert len(result) == roaster_count
 
         for sample_roaster in result:
             assert type(sample_roaster.get("id")) == str
@@ -69,9 +68,10 @@ class TestRoasterColumns:
         [
             ({"city": "los ang"}, 2),
             ({"city": "san fran"}, 0),
-            ({"state": "ca"}, 2),
-            ({"countryId": "us"}, 2),
-            ({"countryName": "united"}, 2),
+            ({"state": "ca"}, 3),
+            ({"countryId": "us"}, 5),
+            ({"countryName": "united"}, 5),
+            ({"countryName": "canada"}, 1),
         ],
     )
     def test_filter_by_location(self, client, filter, count):

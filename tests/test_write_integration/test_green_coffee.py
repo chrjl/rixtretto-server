@@ -1,6 +1,8 @@
 import pytest
 import json
 
+from db.utilities import normalized_text
+
 
 @pytest.mark.usefixtures("seed_sample_green_coffees")
 def test_create_green_coffee(client, green_coffees_list):
@@ -38,7 +40,9 @@ def test_create_green_coffee(client, green_coffees_list):
         assert set(sorted_result[name]["processes"]) == set(coffee["processes"])
         assert set(sorted_result[name]["varieties"]) == set(coffee["varieties"])
         assert set(sorted_result[name]["tasting"]) == set(coffee["tasting"])
-        assert sorted_result[name]["source"]["origin"]["name"] == coffee["origin_name"]
+        assert normalized_text(
+            sorted_result[name]["source"]["origin"]["name"]
+        ) == normalized_text(coffee["origin_name"])
 
 
 @pytest.mark.parametrize(

@@ -7,25 +7,25 @@ from db import models, queries
 
 @pytest.mark.use_sample_data(True)
 class TestSetup:
-    def test_green_coffees(self, engine):
+    def test_green_coffees(self, engine, green_coffee_count):
         with Session(engine) as session:
             result = session.scalars(select(models.GreenCoffee)).all()
-            assert len(result) == 5
+            assert len(result) == green_coffee_count
 
-    def test_roasters(self, engine):
+    def test_roasters(self, engine, roaster_count):
         with Session(engine) as session:
             result = session.scalars(select(models.Roaster)).all()
-            assert len(result) == 2
+            assert len(result) == roaster_count
 
-    def test_roasted_coffees(self, engine):
+    def test_roasted_coffees(self, engine, roasted_coffee_count):
         with Session(engine) as session:
             result = session.scalars(select(models.RoastedCoffee)).all()
-            assert len(result) == 7
+            assert len(result) == roasted_coffee_count
 
-    def test_roasted_coffee_components(self, engine):
+    def test_roasted_coffee_components(self, engine, coffee_association_count):
         with Session(engine) as session:
             result = session.scalars(select(models.CoffeeComponent)).all()
-            assert len(result) == 10
+            assert len(result) == coffee_association_count
 
 
 @pytest.mark.use_sample_data(True)
@@ -129,10 +129,12 @@ class TestCountryProperties:
 
     def test_roasters(self, engine):
         with Session(engine) as session:
-            query = queries.Country().get("roasters")
+            query = (
+                queries.Country().filter_by_name({"starts_with": "CA"}).get("roasters")
+            )
             result = session.scalars(query).all()
 
-            assert len(result) == 2
+            assert len(result) == 1
 
     @pytest.mark.parametrize(
         "country_id,coffee_name,origin_name",
@@ -403,11 +405,11 @@ class TestGreenCoffeeFilters:
     def base_query(self):
         return queries.GreenCoffee()
 
-    def test_select(self, engine, base_query):
+    def test_select(self, engine, base_query, green_coffee_count):
         with Session(engine) as session:
             result = session.scalars(base_query.select()).all()
 
-            assert len(result) == 5
+            assert len(result) == green_coffee_count
             assert type(result[0]) == self.model
             assert "Placer de la Tarde" in [r.name for r in result]
 
@@ -462,40 +464,50 @@ class TestGreenCoffeeFilters:
                 assert name in result
 
     @pytest.mark.parametrize(
-        "processes,count",
+        "processes",
         [
-            (["washed"], 3),
-            (["natural"], 1),
-            (["decaf"], 1),
-            (["honey"], 0),
-            (["anaerobic", "sugarcane"], 2),
+            ["washed"],
+            ["natural"],
+            ["decaf"],
+            ["honey"],
+            ["anaerobic", "sugarcane"],
         ],
     )
-    def test_filter_by_process(self, engine, base_query, processes, count):
+    def test_filter_by_process(
+        self, engine, base_query, processes, green_coffees_by_tag
+    ):
         with Session(engine) as session:
             query = base_query.filter_by_process(processes=processes)
             result = session.scalars(query.select()).all()
 
-            assert len(result) == count
+            expected_result = [
+                green_coffees_by_tag("processes", process) for process in processes
+            ]
+
+            assert len(result) == sum([len(process) for process in expected_result])
 
     @pytest.mark.parametrize(
-        "varieties,expected_coffee_names",
-        [
-            (["bourbon"], ["Dukorere Kawa Anaerobic Lot 10"]),
-            (
-                ["bourbon", "sl28"],
-                ["Dukorere Kawa Anaerobic Lot 10", "Privam Estate AA Week 23"],
-            ),
-        ],
+        "varieties",
+        [["Bourbon"], ["Bourbon", "SL28"]],
     )
     def test_filter_by_variety(
-        self, engine, base_query, varieties, expected_coffee_names
+        self, engine, base_query, varieties, green_coffees_by_tag
     ):
         with Session(engine) as session:
             query = base_query.filter_by_variety(varieties=varieties)
-            result = session.scalars(query.select()).all()
+            result = session.scalars(query.select(["name"])).all()
 
-            assert len(result) == len(expected_coffee_names)
+            expected_result = [
+                green_coffees_by_tag("varieties", variety) for variety in varieties
+            ]
+
+            expected_coffee_names = [
+                coffee["name"]
+                for coffees_by_variety in expected_result
+                for coffee in coffees_by_variety
+            ]
+
+            assert set(result) == set(expected_coffee_names)
 
 
 @pytest.mark.use_sample_data(True)
@@ -607,11 +619,11 @@ class TestRoastedCoffeeFilters:
     def base_query(self):
         return queries.RoastedCoffee()
 
-    def test_select(self, engine, base_query):
+    def test_select(self, engine, base_query, roasted_coffee_count):
         with Session(engine) as session:
             result = session.scalars(base_query.select()).all()
 
-            assert len(result) == 7
+            assert len(result) == roasted_coffee_count
             assert type(result[0]) == self.model
             assert "Placer de la Tarde" in [r.name for r in result]
 
@@ -668,8 +680,8 @@ class TestRoastedCoffeeFilters:
     @pytest.mark.parametrize(
         "processes,count",
         [
-            (["washed"], 3),
-            (["natural"], 1),
+            (["washed"], 4),
+            (["natural"], 2),
             (["decaf"], 1),
             (["honey"], 0),
             (["anaerobic", "sugarcane"], 2),
@@ -691,6 +703,7 @@ class TestRoastedCoffeeFilters:
                 [
                     "Dukorere Kawa Anaerobic Lot 10",
                     "Salomon Estela Marshell Natural K56",
+                    "Kabiufa",
                 ],
             ),
         ],
@@ -703,21 +716,29 @@ class TestRoastedCoffeeFilters:
             assert set(result) == set(coffee_names)
 
     @pytest.mark.parametrize(
-        "profiles,count",
+        "profiles",
         [
-            (["single origin"], 5),
-            (["blend"], 2),
-            (["espresso"], 2),
-            (["decaf"], 1),
-            (["single origin", "decaf"], 5),
+            ["single origin"],
+            ["blend"],
+            ["espresso"],
+            ["decaf"],
+            ["single origin", "decaf"],
         ],
     )
-    def test_filter_by_profile(self, engine, base_query, profiles, count):
+    def test_filter_by_profile(
+        self, engine, base_query, profiles, roasted_coffees_by_tag
+    ):
         with Session(engine) as session:
             query = base_query.filter_by_profile(profiles=profiles)
             result = session.scalars(query.select(["name"])).all()
 
-            assert len(result) == count
+            expected_result = [
+                coffee["name"]
+                for profile in profiles
+                for coffee in roasted_coffees_by_tag("profiles", profile)
+            ]
+
+            assert set(result) == set(expected_result)
 
 
 @pytest.mark.use_sample_data(True)

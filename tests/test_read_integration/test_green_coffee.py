@@ -19,13 +19,13 @@ class TestGreenCoffeeColumns:
     }
     """
 
-    def test_all_green_coffees(self, client):
+    def test_all_green_coffees(self, client, green_coffee_count):
         response = client.post("/", json={"query": self.query})
         data = response.json()["data"]
         result = data["greenCoffees"]
 
         assert response.status_code == 200
-        assert len(result) == 5
+        assert len(result) == green_coffee_count
 
         for green_coffee in result:
             assert "id" in green_coffee
@@ -111,43 +111,57 @@ class TestGreenCoffeeFilters:
             assert result == []
 
     @pytest.mark.parametrize(
-        "processes,count",
-        [
-            (["washed"], 3),
-            (["natural"], 1),
-            (["washed", "natural"], 4),
-            (["washed", "anaerobic"], 3),
-        ],
+        "processes",
+        [["washed"], ["natural"], ["washed", "natural"], ["washed", "anaerobic"]],
     )
-    def test_filter_by_process(self, client, processes, count):
+    def test_filter_by_process(self, client, processes, green_coffees_by_tag):
         filter = {"processes": processes}
         variables = {"filter": filter}
 
         response = client.post("/", json={"query": self.query, "variables": variables})
         assert response.status_code == 200
 
-        result = response.json()["data"]["greenCoffees"]
-        assert len(result) == count
+        result = set(
+            [coffee["name"] for coffee in response.json()["data"]["greenCoffees"]]
+        )
+        expected_result = set(
+            [
+                coffee["name"]
+                for process in processes
+                for coffee in green_coffees_by_tag("processes", process)
+            ]
+        )
+
+        assert len(result) == len(expected_result)
+        assert result == expected_result
 
     @pytest.mark.parametrize(
-        "varieties,count",
+        "varieties",
         [
-            (["sl28"], 1),
-            (["sl-28"], 1),
-            (["sl28", "sl-28"], 1),
-            (["bourbon", "heirloom", "sl28"], 3),
-            (["caturra"], 0),
+            ["SL28"],
+            ["Bourbon", "heirloom", "SL28"],
+            ["Caturra"],
         ],
     )
-    def test_filter_by_variety(self, client, varieties, count):
+    def test_filter_by_variety(self, client, varieties, green_coffees_by_tag):
         filter = {"varieties": varieties}
         variables = {"filter": filter}
 
         response = client.post("/", json={"query": self.query, "variables": variables})
         assert response.status_code == 200
 
-        result = response.json()["data"]["greenCoffees"]
-        assert len(result) == count
+        result = set(
+            [coffee["name"] for coffee in response.json()["data"]["greenCoffees"]]
+        )
+        expected_result = set(
+            [
+                coffee["name"]
+                for variety in varieties
+                for coffee in green_coffees_by_tag("varieties", variety)
+            ]
+        )
+
+        assert result == expected_result
 
     @pytest.mark.parametrize(
         "tasting,count",
@@ -160,7 +174,7 @@ class TestGreenCoffeeFilters:
         response = client.post("/", json={"query": self.query, "variables": variables})
         assert response.status_code == 200
 
-        result = response.json()["data"]["greenCoffees"]
+        result = set(coffee["name"] for coffee in response.json()["data"]["greenCoffees"])
         assert len(result) == count
 
 

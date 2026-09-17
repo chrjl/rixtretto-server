@@ -1,4 +1,4 @@
-import os, json
+import os, json, csv
 import pytest
 from dotenv import load_dotenv
 from starlette.testclient import TestClient
@@ -9,8 +9,7 @@ from sqlalchemy.pool import StaticPool
 from db import models
 from api.main import app
 from bin.seed_countries_regions import generate_country_objects, generate_origin_objects
-
-SAMPLE_DATA_PATH = "assets/sample-data.json"
+from bin.seed import SAMPLE_DATA_DIR
 
 # Set up environment
 os.environ["APP_ENV"] = "testing"
@@ -54,3 +53,78 @@ def engine(request):
 @pytest.fixture
 def client(engine):
     return TestClient(app(engine))
+
+
+def sample_data_count(dir, filename):
+    with open(dir + filename) as file:
+        reader = csv.DictReader(file)
+        return sum(1 for _ in reader)
+
+
+@pytest.fixture
+def green_coffee_count():
+    return sample_data_count(SAMPLE_DATA_DIR, "green-coffee.csv")
+
+
+@pytest.fixture
+def roaster_count():
+    return sample_data_count(SAMPLE_DATA_DIR, "roasters.csv")
+
+
+@pytest.fixture
+def roasted_coffee_count():
+    return sample_data_count(SAMPLE_DATA_DIR, "roasted-coffee.csv")
+
+
+@pytest.fixture
+def coffee_association_count():
+    return sample_data_count(SAMPLE_DATA_DIR, "coffee-associations.csv")
+
+
+from db.utilities import normalized_text
+
+
+@pytest.fixture
+def green_coffees_by_tag():
+    def _coffees_by_tag(col_name: str, tag_value: str):
+        with open(SAMPLE_DATA_DIR + "green-coffee.csv") as file:
+            reader = csv.DictReader(file)
+
+            result = [
+                row
+                for row in reader
+                if (
+                    normalized_text(tag_value)
+                    in [
+                        normalized_text(value)
+                        for value in row.get(col_name, "").split(";")
+                    ]
+                )
+            ]
+
+            return result
+
+    return _coffees_by_tag
+
+
+@pytest.fixture
+def roasted_coffees_by_tag():
+    def _coffees_by_tag(col_name: str, tag_value: str):
+        with open(SAMPLE_DATA_DIR + "roasted-coffee.csv") as file:
+            reader = csv.DictReader(file)
+
+            result = [
+                row
+                for row in reader
+                if (
+                    normalized_text(tag_value)
+                    in [
+                        normalized_text(value)
+                        for value in row.get(col_name, "").split(";")
+                    ]
+                )
+            ]
+
+            return result
+
+    return _coffees_by_tag

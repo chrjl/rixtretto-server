@@ -1,6 +1,8 @@
 import json
 import pytest
 
+from db.utilities import normalized_text
+
 
 @pytest.mark.use_sample_data(True)
 class TestService:
@@ -84,6 +86,9 @@ class TestService:
 
         # print(json.dumps(result, indent=2))
 
+
+@pytest.mark.use_sample_data(True)
+class TestServiceRelationships:
     @pytest.mark.parametrize(
         "name_filter, expected_count",
         [
@@ -91,7 +96,7 @@ class TestService:
             ({"contains": "e"}, 2),
         ],
     )
-    def test_relationship_roaster(self, client, name_filter, expected_count):
+    def test_roaster(self, client, name_filter, expected_count):
         query = """
             query($filter: Filter) {
                 coffeeService(filter: $filter) {
@@ -114,7 +119,7 @@ class TestService:
     @pytest.mark.parametrize(
         "name, expected_count", [("go get em tiger", 8), ("cafe saratoga", 1)]
     )
-    def test_relationship_location(self, client, name, expected_count):
+    def test_location(self, client, name, expected_count):
         query = """
             query($filter: Filter) {
                 coffeeService(filter: $filter) {
@@ -151,7 +156,7 @@ class TestService:
         "service_name, expected_count",
         [("Cafe Saratoga", 9), ("Go Get Em Tiger", 4)],
     )
-    def test_relationship_menu(self, client, service_name, expected_count):
+    def test_menu(self, client, service_name, expected_count):
         query = """
             query($filter: Filter) {
                 coffeeService(filter: $filter) {

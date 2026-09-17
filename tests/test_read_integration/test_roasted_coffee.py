@@ -12,13 +12,13 @@ class TestRoastedCoffeeColumns:
     }
     """
 
-    def test_all_roasted_coffees(self, client):
+    def test_all_roasted_coffees(self, client, roasted_coffee_count):
         response = client.post("/", json={"query": self.query})
         data = response.json()["data"]
         result = data["roastedCoffees"]
 
         assert response.status_code == 200
-        assert len(result) == 7
+        assert len(result) == roasted_coffee_count
 
         for green_coffee in result:
             assert "id" in green_coffee
@@ -89,15 +89,10 @@ class TestRoastedCoffeeFilters:
             assert result == []
 
     @pytest.mark.parametrize(
-        "profiles,count",
-        [
-            (["single origin"], 5),
-            (["blend"], 2),
-            (["blend", "espresso"], 3),
-            (["nothing"], 0),
-        ],
+        "profiles",
+        [["single origin"], ["blend"], ["blend", "espresso"], ["nothing"]],
     )
-    def test_filter_by_profile(self, client, profiles, count):
+    def test_filter_by_profile(self, client, profiles, roasted_coffees_by_tag):
         filter = {"profiles": profiles}
         variables = {"filter": filter}
 
@@ -105,7 +100,16 @@ class TestRoastedCoffeeFilters:
         assert response.status_code == 200
 
         result = response.json()["data"]["roastedCoffees"]
-        assert len(result) == count
+        expected_names = set(
+            [
+                coffee["name"]
+                for profile in profiles
+                for coffee in roasted_coffees_by_tag("profiles", profile)
+            ]
+        )
+
+        assert len(result) == len(expected_names)
+        assert set([coffee["name"] for coffee in result]) == expected_names
 
     @pytest.mark.parametrize(
         "tasting,count",
@@ -129,10 +133,10 @@ class TestRoastedCoffeeFilters:
     @pytest.mark.parametrize(
         "processes,count",
         [
-            (["washed"], 3),
-            (["natural"], 1),
-            (["washed", "natural"], 4),
-            (["washed", "anaerobic"], 3),
+            (["washed"], 4),
+            (["natural"], 2),
+            (["washed", "natural"], 6),
+            (["washed", "anaerobic"], 4),
         ],
     )
     def test_filter_by_process(self, client, processes, count):
@@ -148,11 +152,11 @@ class TestRoastedCoffeeFilters:
     @pytest.mark.parametrize(
         "varieties,count",
         [
-            (["sl28"], 1),
+            (["SL28"], 1),
             (["sl-28"], 1),
             (["sl28", "sl-28"], 1),
-            (["bourbon", "heirloom", "sl28"], 3),
-            (["caturra"], 0),
+            (["Bourbon", "heirloom", "SL28"], 4),
+            (["Caturra"], 0),
         ],
     )
     def test_filter_by_variety(self, client, varieties, count):
