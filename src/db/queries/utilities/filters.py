@@ -143,9 +143,9 @@ def location_filter_clauses(filter: LocationFilter) -> list[ColumnElement]:
             func.lower(models.Roaster.state).like(state.lower() + "%"),
         )
 
-    if country_code := filter.get("country_code"):
+    if country_id := filter.get("country_id"):
         filter_clauses.append(
-            func.lower(models.Roaster.country).like(country_code.lower() + "%"),
+            func.lower(models.Roaster.country).like(country_id.lower() + "%"),
         )
 
     if country_name := filter.get("country_name"):
