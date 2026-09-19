@@ -98,3 +98,14 @@ def resolve_roasters_of_origin(
         session.add(origin)
 
         return session.scalars(queries.Origin(origin.id).get("roasters")).all()
+
+
+@origin.field("service")
+def resolve_service(
+    origin: models.Origin, info: GraphQLResolveInfo
+) -> Sequence[models.Service]:
+    Session = info.context["Session"]
+
+    with Session() as session:
+        query = queries.Origin(origin.id).get("service")
+        return session.scalars(query).all()

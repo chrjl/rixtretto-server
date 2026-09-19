@@ -122,6 +122,17 @@ def resolve_roasted_coffee_date_removed(roasted_coffee: models.RoastedCoffee, _i
     return None
 
 
+@roasted_coffee.field("service")
+def resolve_service(
+    roasted_coffee: models.RoastedCoffee, info: GraphQLResolveInfo
+) -> list[models.Service]:
+    Session = info.context["Session"]
+
+    with Session() as session:
+        session.add(roasted_coffee)
+        return roasted_coffee.service
+
+
 @mutation_type.field("roastedCoffeeCreate")
 def resolve_roasted_coffee_create(
     _,

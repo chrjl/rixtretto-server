@@ -118,6 +118,20 @@ class Origin(Base[models.Origin]):
             )
         )
 
+    def service(self) -> Select[tuple[models.Service]]:
+        """
+        List of `Service` that serve roasted coffees from specified origin(s),
+        including all subregions.
+        """
+
+        return (
+            select(models.Service)
+            .distinct()
+            .join_from(models.Service, models.ServiceCoffeeAssociation)
+            .join_from(models.ServiceCoffeeAssociation, models.RoastedCoffee)
+            .where(models.RoastedCoffee.id.in_(self.roasted_coffees(["id"])))
+        )
+
     def processes(self) -> CompoundSelect[tuple[str]]:
         """Green coffee processing methods of cataloged coffees."""
 

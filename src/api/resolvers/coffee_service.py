@@ -76,3 +76,60 @@ def resolve_menu_items(service: models.Service, info: GraphQLResolveInfo):
 
         session.add(service)
         return service.menu_items
+
+
+@coffee_service.field("coffees")
+def resolve_coffees(
+    service: models.Service, info: GraphQLResolveInfo
+) -> list[models.RoastedCoffee]:
+    Session = info.context["Session"]
+
+    with Session() as session:
+        session.add(service)
+        return service.roasted_coffees
+
+
+@coffee_service.field("origins")
+def resolve_origins(
+    service: models.Service, info: GraphQLResolveInfo
+) -> list[models.Origin]:
+    Session = info.context["Session"]
+
+    with Session() as session:
+        session.add(service)
+
+        result = session.scalars(
+            queries.RoastedCoffee(
+                *[coffee.id for coffee in service.roasted_coffees]
+            ).get("origins")
+        ).all()
+
+        return result
+
+
+@coffee_service.field("processes")
+def resolve_processes(service: models.Service, info: GraphQLResolveInfo) -> list[str]:
+    Session = info.context["Session"]
+
+    with Session() as session:
+        session.add(service)
+
+        return session.scalars(
+            queries.RoastedCoffee(
+                *[coffee.id for coffee in service.roasted_coffees]
+            ).get("processes")
+        ).all()
+
+
+@coffee_service.field("varieties")
+def resolve_varieties(service: models.Service, info: GraphQLResolveInfo) -> list[str]:
+    Session = info.context["Session"]
+
+    with Session() as session:
+        session.add(service)
+
+        return session.scalars(
+            queries.RoastedCoffee(
+                *[coffee.id for coffee in service.roasted_coffees]
+            ).get("varieties")
+        ).all()
