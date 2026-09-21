@@ -117,6 +117,238 @@ class TestServiceRelationships:
         assert len(result) == expected_count
 
     @pytest.mark.parametrize(
+        "name,coffee_names",
+        [
+            (
+                "Go Get Em Tiger",
+                ["Placer de la Tarde", "Minor Monuments", "Humbuggle: A Holiday Blend"],
+            ),
+        ],
+    )
+    def test_coffees(self, client, name, coffee_names):
+        query = """
+            query($filter: Filter) {
+                coffeeService(filter: $filter) {
+                    name
+                    coffees {
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"name": {"starts_with": name}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["coffeeService"][0]["coffees"]
+
+        assert set([normalized_text(coffee["name"]) for coffee in result]) == set(
+            [normalized_text(name) for name in coffee_names]
+        )
+
+    @pytest.mark.parametrize(
+        "roasted_coffee_name, service_names",
+        [
+            ("Minor Monuments", ["Go Get Em Tiger"]),
+            ("Tariku Kare", []),
+        ],
+    )
+    def test_roasted_coffees_reverse(self, client, roasted_coffee_name, service_names):
+        query = """
+            query($filter: Filter) {
+                roastedCoffees(filter: $filter) {
+                    id
+                    name
+                    service {
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": roasted_coffee_name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["roastedCoffees"][0]
+
+        assert [coffee["name"] for coffee in result["service"]] == service_names
+
+    @pytest.mark.parametrize(
+        "service_name,origin_names",
+        [
+            (
+                "Go Get Em Tiger",
+                ["Honduras", "Guatemala", "Colombia", "Kenya", "Huila"],
+            ),
+        ],
+    )
+    def test_origins(self, client, service_name, origin_names):
+        query = """
+            query($filter: Filter) {
+                coffeeService(filter: $filter) {
+                    name
+                    coffees {
+                        id
+                        name
+                    }
+                    origins {
+                        id
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": service_name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["coffeeService"][0]["origins"]
+
+        assert set([normalized_text(origin["name"]) for origin in result]) == set(
+            [normalized_text(name) for name in origin_names]
+        )
+
+    @pytest.mark.parametrize(
+        "origin_name, service_names",
+        [
+            ("Colombia", ["Go Get Em Tiger"]),
+            ("Papua New Guinea", ["Cafe Saratoga"]),
+        ],
+    )
+    def test_origin_reverse(self, client, origin_name, service_names):
+        query = """
+            query($filter: Filter) {
+                origins(filter: $filter) {
+                    name
+                    service {
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": origin_name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = [
+            service["name"]
+            for service in response.json()["data"]["origins"][0]["service"]
+        ]
+
+        assert set(result) == set(service_names)
+
+    @pytest.mark.parametrize(
+        "service_name, expected_processes",
+        [
+            ("Go Get Em Tiger", ["decaf", "sugarcane"]),
+            ("Cafe Saratoga", ["natural", "washed"]),
+        ],
+    )
+    def test_processes(self, client, service_name, expected_processes):
+        query = """
+            query($filter: Filter) {
+                coffeeService(filter: $filter) {
+                    name
+                    processes
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": service_name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["coffeeService"][0]["processes"]
+
+        assert set(result) == set(expected_processes)
+
+    @pytest.mark.parametrize(
+        "processes, service_names",
+        [
+            (["decaf"], ["Go Get Em Tiger"]),
+            (["decaf", "sugarcane"], ["Go Get Em Tiger"]),
+            (["decaf", "washed"], ["Go Get Em Tiger", "Cafe Saratoga"]),
+            (["404"], []),
+        ],
+    )
+    def test_process_reverse(self, client, processes, service_names):
+        query = """
+            query($filter: Filter) {
+                roastedCoffees(filter: $filter) {
+                    name
+                    service {
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"processes": processes}}
+        response = client.post("/", json={"query": query, "variables": variables})
+
+        result = [
+            service["name"]
+            for coffee in response.json()["data"]["roastedCoffees"]
+            for service in coffee["service"]
+        ]
+
+        assert set(result) == set(service_names)
+
+    @pytest.mark.parametrize(
+        "service_name, expected_varieties",
+        [
+            ("Go Get Em Tiger", []),
+            ("Cafe Saratoga", ["Gesha", "Arusha", "Bourbon", "Typica"]),
+        ],
+    )
+    def test_varieties(self, client, service_name, expected_varieties):
+        query = """
+            query($filter: Filter) {
+                coffeeService(filter: $filter) {
+                    name
+                    varieties
+                }
+            }
+        """
+
+        variables = {"filter": {"name": {"starts_with": service_name}}}
+
+        response = client.post("/", json={"query": query, "variables": variables})
+        result = response.json()["data"]["coffeeService"][0]["varieties"]
+
+        assert set(result) == set(expected_varieties)
+
+    @pytest.mark.parametrize(
+        "varieties, service_names",
+        [
+            (["gesha"], ["Cafe Saratoga"]),
+            (["gesha", "typica"], ["Cafe Saratoga"]),
+            (["gesha", "sl28"], ["Cafe Saratoga"]),
+        ],
+    )
+    def test_varieties_reverse(self, client, varieties, service_names):
+        query = """
+            query($filter: Filter) {
+                roastedCoffees(filter: $filter) {
+                    name
+                    service {
+                        name
+                    }
+                }
+            }
+        """
+
+        variables = {"filter": {"varieties": varieties}}
+        response = client.post("/", json={"query": query, "variables": variables})
+
+        result = [
+            service["name"]
+            for coffee in response.json()["data"]["roastedCoffees"]
+            for service in coffee["service"]
+        ]
+
+        assert set(result) == set(service_names)
+
+    @pytest.mark.parametrize(
         "name, expected_count", [("go get em tiger", 8), ("cafe saratoga", 1)]
     )
     def test_location(self, client, name, expected_count):
