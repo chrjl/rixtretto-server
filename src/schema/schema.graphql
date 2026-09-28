@@ -59,6 +59,11 @@ type Error {
   message: String
 }
 
+interface MutationResult {
+  status: Boolean!
+  error: Error
+}
+
 enum Process {
   WASHED
   NATURAL

@@ -27,7 +27,7 @@ input RoastedCoffeeInput {
   tasting: [String]
 }
 
-type RoastedCoffeeMutationResult {
+type RoastedCoffeeMutationResult implements MutationResult {
   status: Boolean!
   error: Error
   roastedCoffee: RoastedCoffee
@@ -50,7 +50,7 @@ input CoffeeComponentInput {
   fraction: Int
 }
 
-type CoffeeComponentMutationResult {
+type CoffeeComponentMutationResult implements MutationResult {
   status: Boolean!
   error: Error
   roastedCoffee: RoastedCoffee!

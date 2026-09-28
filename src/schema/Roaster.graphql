@@ -24,7 +24,7 @@ input RoastingEquipmentInput {
   capacity: Float
 }
 
-type RoasterMutationResult {
+type RoasterMutationResult implements MutationResult{
   status: Boolean!
   error: Error
   roaster: Roaster

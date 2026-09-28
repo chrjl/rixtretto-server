@@ -40,7 +40,7 @@ input GreenCoffeeSourceInput {
   details: JSON
 }
 
-type GreenCoffeeMutationResult {
+type GreenCoffeeMutationResult implements MutationResult {
   status: Boolean!
   error: Error
   greenCoffee: GreenCoffee
