@@ -40,6 +40,9 @@ type CoffeeComponent {
   process: String
   variety: String
   fraction: Float
+
+  dateAdded: String
+  dateUpdated: String
 }
 
 input CoffeeComponentInput {
@@ -48,15 +51,7 @@ input CoffeeComponentInput {
   process: String
   variety: String
   fraction: Int
-}
 
-type CoffeeComponentMutationResult implements MutationResult {
-  status: Boolean!
-  error: Error
-  roastedCoffee: RoastedCoffee!
-  greenCoffee: GreenCoffee
-  origin: Origin
-  process: String
-  variety: String
-  fraction: Float
+  dateAdded: String
+  dateUpdated: String
 }

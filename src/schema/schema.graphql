@@ -22,10 +22,10 @@ type Mutation {
     id: ID
     input: GreenCoffeeInput!
   ): GreenCoffeeMutationResult!
-  greenCoffeeTagAdd(id: ID!, input: CoffeeTagInput): GreenCoffeeMutationResult!
+  greenCoffeeTagAdd(id: ID!, input: CoffeeTagInput!): GreenCoffeeMutationResult!
   greenCoffeeTagDelete(
     id: ID!
-    input: CoffeeTagInput
+    input: CoffeeTagInput!
   ): GreenCoffeeMutationResult!
   roastedCoffeeCreate(input: RoastedCoffeeInput!): RoastedCoffeeMutationResult!
   roastedCoffeeUpdate(
@@ -34,24 +34,24 @@ type Mutation {
   ): RoastedCoffeeMutationResult!
   roastedCoffeeTagAdd(
     id: ID!
-    input: CoffeeTagInput
+    input: CoffeeTagInput!
   ): RoastedCoffeeMutationResult!
   roastedCoffeeTagDelete(
     id: ID!
-    input: CoffeeTagInput
+    input: CoffeeTagInput!
   ): RoastedCoffeeMutationResult!
   roastedCoffeeComponentAdd(
     id: ID!
-    input: CoffeeComponentInput
-  ): CoffeeComponentMutationResult!
+    input: CoffeeComponentInput!
+  ): RoastedCoffeeMutationResult!
   roastedCoffeeComponentDelete(
     id: ID!
-    input: CoffeeComponentInput
-  ): CoffeeComponentMutationResult!
+    input: CoffeeComponentInput!
+  ): RoastedCoffeeMutationResult!
   roastedCoffeeComponentUpdate(
     id: ID!
-    input: CoffeeComponentInput
-  ): CoffeeComponentMutationResult!
+    input: CoffeeComponentInput!
+  ): RoastedCoffeeMutationResult!
 }
 
 type Error {
@@ -78,7 +78,6 @@ enum Category {
 }
 
 input LocationFilter {
-  address: String
   neighborhood: String
   city: String
   state: String
@@ -87,9 +86,12 @@ input LocationFilter {
 }
 
 type Location {
-  name: String
+  "Street address"
   address: String
-  address_detail: String
+
+  "Suite/unit number, etc."
+  addressDetail: String
+
   neighborhood: String
   city: String
   state: String
@@ -97,6 +99,13 @@ type Location {
 }
 
 input LocationInput {
+  "Street address"
+  address: String
+
+  "Suite/unit number, etc."
+  addressDetail: String
+
+  neighborhood: String
   city: String
   state: String
   countryId: ID
