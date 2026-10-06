@@ -6,7 +6,7 @@ from ariadne import gql, load_schema_from_path, make_executable_schema, QueryTyp
 from ariadne.asgi import GraphQL
 from ariadne.types import ContextValue
 
-from .resolvers import types
+from .resolvers import object_types, mutation_type, input_types
 
 from typing import TYPE_CHECKING
 
@@ -15,7 +15,13 @@ if TYPE_CHECKING:
 
 environment = getenv("APP_ENV")
 type_defs = gql(load_schema_from_path("src/schema/"))
-schema = make_executable_schema(type_defs, *types, convert_names_case=True)
+schema = make_executable_schema(
+    type_defs,
+    *object_types,
+    mutation_type,
+    *input_types,
+    convert_names_case=True,
+)
 
 
 def app(engine: Engine):
