@@ -1,19 +1,11 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+from ariadne import ObjectType, InputType
+from pydantic import StringConstraints, MISSING, model_validator
+from typing import Annotated, Self, TYPE_CHECKING
 from datetime import datetime
-from ariadne import ObjectType
-from sqlalchemy.exc import IntegrityError
+from api.types import BaseModel
 
+from .mutation import mutation_type, CoffeeTagInput
 from db import models, queries
-from .mutation import mutation_type
-from api.types import (
-    RoastedCoffeeInput,
-    RoastedCoffeeMutationResult,
-    CoffeeTagInput,
-    CoffeeComponentInput,
-    CoffeeComponentMutationResult,
-)
 
 if TYPE_CHECKING:
     from graphql import GraphQLResolveInfo
@@ -133,63 +125,72 @@ def resolve_service(
         return roasted_coffee.service
 
 
+class RoastedCoffeeInput(BaseModel):
+    name: (
+        Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)] | MISSING
+    ) = MISSING
+    roaster_id: int | MISSING = MISSING
+    date_added: datetime | None | MISSING = MISSING
+    date_removed: datetime | None | MISSING = MISSING
+    profiles: list[str] | MISSING = MISSING
+    tasting: list[str] | MISSING = MISSING
+
+
+roasted_coffee_input_type = InputType(
+    "RoastedCoffeeInput", lambda data: RoastedCoffeeInput(**data)
+)
+
+
 @mutation_type.field("roastedCoffeeCreate")
 def resolve_roasted_coffee_create(
     _,
     info: GraphQLResolveInfo,
     input: RoastedCoffeeInput,
-) -> RoastedCoffeeMutationResult:
+):
     Session = info.context["Session"]
 
-    if not input.get("name"):
+    if input.name is MISSING or not input.name:
         return {
             "status": False,
             "error": {"code": 400, "message": "Missing required field `name`"},
         }
 
-    if not input.get("roaster_id"):
+    if input.roaster_id is MISSING:
         return {
             "status": False,
             "error": {"code": 400, "message": "Missing required field `roasterId`"},
         }
 
-    roasted_coffee_obj = models.RoastedCoffee(
-        name=input.get("name"),
-        roaster_id=input.get("roaster_id"),
+    roasted_coffee = models.RoastedCoffee(
+        name=input.name,
+        roaster_id=input.roaster_id,
+        date_added=input.date_added,
+        date_removed=input.date_removed,
     )
 
-    try:
-        if date_added := input.get("date_added"):
-            roasted_coffee_obj.date_added = datetime.fromisoformat(date_added)
-
-        if date_removed := input.get("date_removed"):
-            roasted_coffee_obj.date_removed = datetime.fromisoformat(date_removed)
-    except ValueError:
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": "Datetime fields not in iso format",
-            },
-        }
-
-    for value in input.get("profiles", []):
-        roasted_coffee_obj.tags.append(
-            models.RoastedCoffeeTag(type="profile", value=value)
+    if input.profiles is not MISSING:
+        roasted_coffee.tags.extend(
+            [
+                models.RoastedCoffeeTag(type="profile", value=profile)
+                for profile in input.profiles
+            ]
         )
 
-    for value in input.get("tasting", []):
-        roasted_coffee_obj.tags.append(
-            models.RoastedCoffeeTag(type="tasting", value=value)
+    if input.tasting is not MISSING:
+        roasted_coffee.tags.extend(
+            [
+                models.RoastedCoffeeTag(type="tasting", value=note)
+                for note in input.tasting
+            ]
         )
 
     with Session() as session:
-        session.add(roasted_coffee_obj)
+        session.add(roasted_coffee)
         session.commit()
 
-        session.refresh(roasted_coffee_obj)
+        session.refresh(roasted_coffee)
 
-    return {"status": True, "roasted_coffee": roasted_coffee_obj}
+    return {"status": True, "roasted_coffee": roasted_coffee}
 
 
 @mutation_type.field("roastedCoffeeUpdate")
@@ -198,7 +199,7 @@ def resolve_roasted_coffee_update(
     info: GraphQLResolveInfo,
     id: int,
     input: RoastedCoffeeInput,
-) -> RoastedCoffeeMutationResult:
+):
     Session = info.context["Session"]
 
     with Session() as session:
@@ -213,73 +214,24 @@ def resolve_roasted_coffee_update(
                 },
             }
 
-        if "name" in input:
-            if input["name"] is None:
-                return {
-                    "status": False,
-                    "error": {
-                        "code": 400,
-                        "message": "Cannot unset required field `name`",
-                    },
-                }
-            roasted_coffee.name = input["name"]
+        for column in ["name", "roaster_id", "date_added", "date_removed"]:
+            if (value := getattr(input, column)) is not MISSING:
+                setattr(roasted_coffee, column, value)
 
-        if "roaster_id" in input:
-            if input["roaster_id"] is None:
-                return {
-                    "status": False,
-                    "error": {
-                        "code": 400,
-                        "message": "Cannot unset required field `roaster_id`",
-                    },
-                }
-            roasted_coffee.roaster_id = input["roaster_id"]
+        for input_attr, tag_name in [("profiles", "profile"), ("tasting", "tasting")]:
+            if (tag_values := getattr(input, input_attr)) is not MISSING:
+                # Reset tag type
+                session.execute(
+                    queries.RoastedCoffee().clear_tag(roasted_id=id, type="profile")
+                )
 
-        for column in ["dateAdded", "dateRemoved"]:
-            if column in input:
-                if column is None:
-                    setattr(roasted_coffee, column, None)
-                else:
-                    try:
-                        setattr(
-                            roasted_coffee,
-                            column,
-                            datetime.fromisoformat(input[column]),
-                        )
-                    except ValueError:
-                        return {
-                            "status": False,
-                            "error": {
-                                "code": 400,
-                                "message": "Datetime fieldsCannot unset required field `roaster_id`",
-                            },
-                        }
-
-        if "profiles" in input:
-            # Reset tags
-            session.execute(
-                queries.RoastedCoffee().clear_tag(roasted_id=id, type="profile")
-            )
-            # Write new tags
-            roasted_coffee.tags.extend(
-                [
-                    models.RoastedCoffeeTag(type="profile", value=value)
-                    for value in input["profiles"]
-                ]
-            )
-
-        if "tasting" in input:
-            # Reset tags
-            session.execute(
-                queries.RoastedCoffee().clear_tag(roasted_id=id, type="tasting")
-            )
-            # Write new tags
-            roasted_coffee.tags.extend(
-                [
-                    models.RoastedCoffeeTag(type="tasting", value=value)
-                    for value in input["tasting"]
-                ]
-            )
+                # Write new tags
+                roasted_coffee.tags.extend(
+                    [
+                        models.RoastedCoffeeTag(type=tag_name, value=value)
+                        for value in tag_values
+                    ]
+                )
 
         session.commit()
         session.refresh(roasted_coffee)
@@ -290,20 +242,9 @@ def resolve_roasted_coffee_update(
 @mutation_type.field("roastedCoffeeTagAdd")
 def resolve_roasted_coffee_tag_add(
     _, info: GraphQLResolveInfo, id: int, input: CoffeeTagInput
-) -> RoastedCoffeeMutationResult:
+):
     Session = info.context["Session"]
-    type = input["type"]
-
-    if "values" not in input:
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": f"Input is missing tag values for type {type}",
-            },
-        }
-
-    values = input["values"]
+    type = input.type
 
     if type not in SUPPORTED_TAG_TYPES:
         return {
@@ -312,8 +253,12 @@ def resolve_roasted_coffee_tag_add(
         }
 
     with Session() as session:
-        for value in values:
-            session.add(models.RoastedCoffeeTag(roasted_id=id, type=type, value=value))
+        session.add_all(
+            [
+                models.RoastedCoffeeTag(roasted_id=id, type=type, value=value)
+                for value in input.values
+            ]
+        )
 
         session.commit()
         roasted_coffee = session.get(models.RoastedCoffee, id)
@@ -324,28 +269,21 @@ def resolve_roasted_coffee_tag_add(
 @mutation_type.field("roastedCoffeeTagDelete")
 def resolve_roasted_coffee_tag_delete(
     _, info: GraphQLResolveInfo, id: int, input: CoffeeTagInput
-) -> RoastedCoffeeMutationResult:
+):
     Session = info.context["Session"]
-    type = input["type"]
 
-    if type not in SUPPORTED_TAG_TYPES:
+    if input.type not in SUPPORTED_TAG_TYPES:
         return {
             "status": False,
             "error": {"code": 400, "message": f"Unsupported tag type `{type}`"},
         }
 
     with Session() as session:
-        if "values" not in input:
-            session.execute(queries.RoastedCoffee().clear_tag(roasted_id=id, type=type))
-
-        else:
-            values = input["values"]
-
-            session.execute(
-                queries.RoastedCoffee().delete_tags(
-                    roasted_id=id, type=type, values=values
-                )
+        session.execute(
+            queries.RoastedCoffee().delete_tags(
+                roasted_id=id, type=input.type, values=input.values
             )
+        )
 
         session.commit()
         roasted_coffee = session.get(models.RoastedCoffee, id)
@@ -353,26 +291,33 @@ def resolve_roasted_coffee_tag_delete(
     return {"status": True, "roasted_coffee": roasted_coffee}
 
 
-def validate_coffee_component(
-    origin_id, green_id
-) -> CoffeeComponentMutationResult | None:
-    if (green_id is None) and (origin_id is None):
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": "Missing required parameter: either `greenId` or `originId` must be specified.",
-            },
-        }
+class CoffeeComponentInput(BaseModel):
+    green_id: int | MISSING = MISSING
+    origin_id: int | MISSING = MISSING
+    process: str | None | MISSING = MISSING
+    variety: str | None | MISSING = MISSING
+    fraction: int | None | MISSING = MISSING
+    date_added: datetime | None | MISSING = MISSING
+    date_updated: datetime | None | MISSING = MISSING
 
-    if (green_id is not None) and (origin_id is not None):
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": "Too many parameters: only one of either `greenId` or `originId` must be specified.",
-            },
-        }
+    @model_validator(mode="after")
+    def validate_coffee_components(self) -> Self:
+        match (self.green_id, self.origin_id):
+            case (int(), int()):
+                raise ValueError(
+                    "Too many parameters: only one of either `greenId` or `originId` can be specified."
+                )
+            case (g, o) if g is MISSING and o is MISSING:
+                raise ValueError(
+                    "Missing parameter: exactly one of either `greenId` or `originId` must be specified."
+                )
+
+        return self
+
+
+coffee_component_input_type = InputType(
+    "CoffeeComponentInput", lambda data: CoffeeComponentInput(**data)
+)
 
 
 @mutation_type.field("roastedCoffeeComponentAdd")
@@ -381,21 +326,13 @@ def resolve_roasted_coffee_component_add(
     info: GraphQLResolveInfo,
     id: int,
     input: CoffeeComponentInput,
-) -> CoffeeComponentMutationResult:
+):
     Session = info.context["Session"]
 
-    roasted_id = id
-    green_id = input.get("green_id")
-    origin_id = input.get("origin_id")
-    process = input.get("process")
-    variety = input.get("variety")
-    fraction = input.get("fraction")
-
-    if error_response := validate_coffee_component(origin_id, green_id):
-        return error_response
+    input_data = input.model_dump()
 
     with Session() as session:
-        roasted_coffee = session.get(models.RoastedCoffee, roasted_id)
+        roasted_coffee = session.get(models.RoastedCoffee, id)
         if roasted_coffee is None:
             return {
                 "status": False,
@@ -405,86 +342,91 @@ def resolve_roasted_coffee_component_add(
                 },
             }
 
-        green_coffee = None
-        origin = None
-
         component_association = models.CoffeeComponent(
-            roasted_id=roasted_id,
-            fraction=fraction,
+            roasted_id=id,
+            fraction=input_data.get("fraction"),
         )
+
+        if "date_added" in input_data:
+            component_association.date_added = input_data["date_added"]
+        if "date_updated" in input_data:
+            component_association.date_updated = input_data["date_updated"]
 
         roasted_coffee.component_associations.append(component_association)
 
-        try:
-            if green_id is not None:
-                green_coffee = session.get(models.GreenCoffee, green_id)
+        if "green_id" in input_data:
+            green_id = input_data["green_id"]
 
-                if green_coffee is None:
-                    return {
-                        "status": False,
-                        "error": {
-                            "code": 404,
-                            "message": f"Green coffee with id `{green_id}` not found",
-                        },
-                    }
+            green_coffee = session.get(models.GreenCoffee, green_id)
 
-                component_association.green_id = green_id
+            if green_coffee is None:
+                return {
+                    "status": False,
+                    "error": {
+                        "code": 404,
+                        "message": f"Green coffee with id `{green_id}` not found",
+                    },
+                }
 
-                session.commit()
-                session.refresh(green_coffee)
-            elif origin_id is not None:
-                origin = session.get(models.Origin, origin_id)
+            component_association.green_id = green_id
 
-                if origin is None:
-                    return {
-                        "status": False,
-                        "error": {
-                            "code": 404,
-                            "message": f"Origin with id `{origin_id}` not found",
-                        },
-                    }
+            session.commit()
+            session.refresh(roasted_coffee)
 
-                component_association.origin_id = origin_id
-                component_association.process = process
-                component_association.variety = variety
+        elif "origin_id" in input_data:
+            origin_id = input_data["origin_id"]
+            origin = session.get(models.Origin, origin_id)
 
-                session.commit()
-                session.refresh(origin)
-        except IntegrityError:
-            return {
-                "status": False,
-                "error": {"code": 400, "message": "Issue with inputs."},
-            }
+            if origin is None:
+                return {
+                    "status": False,
+                    "error": {
+                        "code": 404,
+                        "message": f"Origin with id `{origin_id}` not found",
+                    },
+                }
 
-        session.refresh(roasted_coffee)
+            component_association.origin_id = origin_id
+            component_association.process = input_data.get("process")
+            component_association.variety = input_data.get("variety")
 
-    return {
-        "status": True,
-        "roasted_coffee": roasted_coffee,
-        "green_coffee": green_coffee,
-        "origin": origin,
-    }
+            session.commit()
+            session.refresh(roasted_coffee)
+
+        return {
+            "status": True,
+            "roasted_coffee": roasted_coffee,
+        }
 
 
 @mutation_type.field("roastedCoffeeComponentDelete")
 def resolve_roasted_coffee_component_delete(
     _, info: GraphQLResolveInfo, id: int, input: CoffeeComponentInput
-) -> CoffeeComponentMutationResult:
+):
     Session = info.context["Session"]
 
-    roasted_id = id
-    green_id = input.get("green_id")
-    origin_id = input.get("origin_id")
-    process = input.get("process")
-    variety = input.get("variety")
+    input_data = input.model_dump()
 
-    if error_response := validate_coffee_component(origin_id, green_id):
-        return error_response
+    green_id = input_data.get("green_id")
+    origin_id = input_data.get("origin_id")
+    process = input_data.get("process")
+    variety = input_data.get("variety")
 
     with Session() as session:
+        roasted_coffee = session.get(models.RoastedCoffee, id)
+
+        if roasted_coffee is None:
+            return {
+                "status": False,
+                "error": {
+                    "code": 404,
+                    "message": f"Roasted coffee with id `{id}` not found",
+                },
+            }
+
         session.execute(
             queries.RoastedCoffee().delete_component(
-                roasted_id=roasted_id,
+                roasted_id=id,
                 green_id=green_id,
                 origin_id=origin_id,
                 process=process,
@@ -493,7 +435,7 @@ def resolve_roasted_coffee_component_delete(
         )
 
         session.commit()
-        roasted_coffee = session.get(models.RoastedCoffee, roasted_id)
+        roasted_coffee = session.get(models.RoastedCoffee, id)
 
     return {"status": True, "roasted_coffee": roasted_coffee}
 
@@ -501,49 +443,32 @@ def resolve_roasted_coffee_component_delete(
 @mutation_type.field("roastedCoffeeComponentUpdate")
 def resolve_roasted_coffee_component_update(
     _, info: GraphQLResolveInfo, id: int, input: CoffeeComponentInput
-) -> CoffeeComponentMutationResult:
+):
     Session = info.context["Session"]
 
-    roasted_id = id
-    green_id = input.get("green_id")
-    origin_id = input.get("origin_id")
-    process = input.get("process")
-    variety = input.get("variety")
-    fraction = input.get("fraction")
+    input_data = input.model_dump()
 
-    if (green_id is None) and (origin_id is None):
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": "Missing required parameter: either `greenId` or `originId` must be specified.",
-            },
-        }
-
-    if (green_id is not None) and (origin_id is not None):
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": "Too many parameters: only one of either `greenId` or `originId` must be specified.",
-            },
-        }
+    green_id = input_data.get("green_id")
+    origin_id = input_data.get("origin_id")
+    process = input_data.get("process")
+    variety = input_data.get("variety")
+    fraction = input_data.get("fraction")
 
     with Session() as session:
-        roasted_coffee = session.get(models.RoastedCoffee, roasted_id)
+        roasted_coffee = session.get(models.RoastedCoffee, id)
 
         if roasted_coffee is None:
             return {
                 "status": False,
                 "error": {
                     "code": 404,
-                    "message": f"Roasted coffee with id `{roasted_id}` not found",
+                    "message": f"Roasted coffee with id `{id}` not found",
                 },
             }
 
         session.execute(
             queries.RoastedCoffee().update_component(
-                roasted_id=roasted_id,
+                roasted_id=id,
                 green_id=green_id,
                 origin_id=origin_id,
                 process=process,
