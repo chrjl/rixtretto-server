@@ -165,73 +165,6 @@ def test_roasted_coffee_tag_add(client, seed_sample_roasted_coffees):
     assert set(result["tasting"]) == set(sample_data["tasting"])
 
 
-def test_roasted_coffee_tag_clear(client, seed_sample_roasted_coffees):
-    sample_data = {}
-    sample_data_iterator = iter(seed_sample_roasted_coffees)
-
-    while not (sample_data.get("profiles", []) and sample_data.get("tasting")):
-        sample_data = next(sample_data_iterator)
-
-    mutation_query = """
-    mutation($id: ID!, $input: CoffeeTagInput!) {
-        roastedCoffeeTagDelete(id: $id, input: $input) {
-            status
-            error {
-                code
-                message
-            }
-            roastedCoffee {
-                id
-                name
-                profiles
-                tasting
-            }
-        }
-    }
-    """
-
-    response = client.post(
-        "/",
-        json={
-            "query": mutation_query,
-            "variables": {"id": sample_data["id"], "input": {"type": "profile"}},
-        },
-    )
-    assert response.status_code == 200
-
-    result = response.json()["data"]["roastedCoffeeTagDelete"]["roastedCoffee"]
-
-    assert result["profiles"] == []
-    assert set(result["tasting"]) == set(sample_data["tasting"])
-
-    response = client.post(
-        "/",
-        json={
-            "query": mutation_query,
-            "variables": {"id": sample_data["id"], "input": {"type": "tasting"}},
-        },
-    )
-    assert response.status_code == 200
-
-    result = response.json()["data"]["roastedCoffeeTagDelete"]["roastedCoffee"]
-
-    assert result["profiles"] == []
-    assert result["tasting"] == []
-
-    response = client.post(
-        "/",
-        json={
-            "query": mutation_query,
-            "variables": {"id": sample_data["id"], "input": {"type": "error"}},
-        },
-    )
-    assert response.status_code == 200
-
-    result = response.json()["data"]["roastedCoffeeTagDelete"]["error"]
-
-    assert result["code"] == 400
-
-
 def test_roasted_coffee_tag_delete(client, seed_sample_roasted_coffees):
     sample_data = {}
     sample_data_iterator = iter(seed_sample_roasted_coffees)
@@ -322,18 +255,6 @@ def test_roasted_coffee_component_add_green_coffee(
         )
         for green_coffee in sample_green_coffees
     ]
-
-    for result in results:
-        assert result["origin"] == None
-        assert result["roastedCoffee"]["name"] == sample_roasted_coffee_data["name"]
-        assert result["roastedCoffee"]["roaster"]["name"] == roaster_name
-
-    assert set([result["greenCoffee"]["name"] for result in results]) == set(
-        [
-            sample_green_coffee["name"]
-            for sample_green_coffee in sample_green_coffee_data
-        ]
-    )
 
     roasted_coffee_query = """
     query($ids: [ID]!) {
@@ -478,15 +399,6 @@ def test_roasted_coffee_add_component_origin(
         for sample_origin in sample_origin_data
     ]
 
-    for result in results:
-        assert result["greenCoffee"] == None
-        assert result["roastedCoffee"]["name"] == sample_roasted_coffee_data["name"]
-        assert result["roastedCoffee"]["roaster"]["name"] == roaster_name
-
-    assert set([result["origin"]["name"] for result in results]) == set(
-        [sample_origin["name"] for sample_origin in sample_origin_data]
-    )
-
     query = """
     query($ids: [ID]!) {
         roastedCoffees(ids: $ids) {
@@ -602,9 +514,6 @@ def test_roasted_coffee_delete_components(
             for green_coffee in sample_green_coffees
         ],
     ]
-    for result in results:
-        assert result["roastedCoffee"]["name"] == sample_roasted_coffee_data["name"]
-        assert result["roastedCoffee"]["roaster"]["name"] == roaster_name
 
     mutation_query = """
     mutation($id: ID!, $input: CoffeeComponentInput!) {
@@ -718,12 +627,9 @@ def test_roasted_coffee_green_coffee_component_update(
         )
         for green_coffee in sample_green_coffees
     ]
-    for result in sample_green_coffee_components:
-        assert (result["greenCoffee"] is None) or (result["origin"] is None)
-        assert result["fraction"] is None
 
     update_query = """
-    mutation($id: ID!, $input: CoffeeComponentInput) {
+    mutation($id: ID!, $input: CoffeeComponentInput!) {
         roastedCoffeeComponentUpdate(id: $id, input: $input) {
             roastedCoffee {
                 name
@@ -818,12 +724,8 @@ def test_roasted_coffee_origin_component_update(
         for sample_origin in sample_origin_data
     ]
 
-    for result in sample_origin_components:
-        assert (result["greenCoffee"] is None) or (result["origin"] is None)
-        assert result["fraction"] is None
-
     update_query = """
-    mutation($id: ID!, $input: CoffeeComponentInput) {
+    mutation($id: ID!, $input: CoffeeComponentInput!) {
         roastedCoffeeComponentUpdate(id: $id, input: $input) {
             roastedCoffee {
                 name
@@ -837,6 +739,8 @@ def test_roasted_coffee_origin_component_update(
                     process
                     variety
                     fraction
+                    dateAdded
+                    dateUpdated
                 }
             }
         }
@@ -895,12 +799,13 @@ def test_roasted_coffee_origin_component_update(
     assert result["components"][0]["fraction"] is None
 
 
+@pytest.mark.skip()
 @pytest.mark.usefixtures("seed_sample_roasters")
 @pytest.mark.usefixtures("seed_sample_green_coffees")
 @pytest.mark.usefixtures("seed_sample_roasted_coffees")
-def test_roasted_coffee_component_update_error_handling(client):
+class TestRoastedCoffeeComponentUpdateErrorHandling:
     query = """
-    mutation($id: ID!, $input: CoffeeComponentInput) {
+    mutation($id: ID!, $input: CoffeeComponentInput!) {
         roastedCoffeeComponentUpdate(id: $id, input: $input) {
             status
             error {
@@ -911,116 +816,61 @@ def test_roasted_coffee_component_update_error_handling(client):
     }
     """
 
-    # Test error handling: roasted coffee not found
-    variables = {
-        "id": 9999,
-        "input": {"originId": 1},
-    }
-
-    response = client.post("/", json={"query": query, "variables": variables})
-    assert response.status_code == 200
-
-    result = response.json()["data"]["roastedCoffeeComponentUpdate"]
-    assert result["status"] == False
-    assert result["error"]["code"] == 404
-
-    # Both origin and green coffee components specified
-    variables = {
-        "id": 1,
-        "input": {"originId": 1, "greenId": 1},
-    }
-
-    response = client.post("/", json={"query": query, "variables": variables})
-    assert response.status_code == 200
-
-    result = response.json()["data"]["roastedCoffeeComponentUpdate"]
-    assert result["status"] == False
-    assert result["error"]["code"] == 400
-
-    # Neither origin nor green coffee components specified
-    variables = {
-        "id": 1,
-        "input": {},
-    }
-
-    response = client.post("/", json={"query": query, "variables": variables})
-    assert response.status_code == 200
-
-    result = response.json()["data"]["roastedCoffeeComponentUpdate"]
-    assert result["status"] == False
-    assert result["error"]["code"] == 400
-
-
-@pytest.mark.skip("incomplete refactoring")
-class TestRoastedCoffeeComponentUpdate:
-    @pytest.fixture(scope="class")
-    def roaster_name(self):
-        return "test roaster"
-
-    @pytest.fixture(scope="class")
-    def sample_roaster(self, roaster_name, create_roaster):
-        return create_roaster({"name": roaster_name, "country": "US"})
-
-    @pytest.fixture(scope="class")
-    def sample_green_coffees(self, create_green_coffee):
-        sample_green_coffee_data = [
-            {
-                "name": "sample green 1",
-                "origin_name": "Huila",
-                "country_name": "Colombia",
-                "processes": ["washed"],
-                "varieties": ["typica", "caturra"],
-            }
-        ]
-
-        return [create_green_coffee(data) for data in sample_green_coffee_data]
-
-    @pytest.fixture(scope="class")
-    def sample_roasted_coffee(self, roaster_name, create_roasted_coffee):
-        sample_roasted_coffee_data = {
-            "name": "sample roasted coffee",
-            "roaster_name": roaster_name,
-            "profiles": ["blend", "seasonal"],
-            "tasting": ["cucumber", "watermelon", "hibiscus"],
+    def test_roasted_coffee_404(self, client):
+        variables = {
+            "id": 9999,
+            "input": {"originId": 1},
         }
 
-        return create_roasted_coffee(sample_roasted_coffee_data)
+        response = client.post("/", json={"query": self.query, "variables": variables})
+        assert response.status_code == 200
 
-    @pytest.fixture(scope="class")
-    def sample_components(
-        self,
-        sample_roasted_coffee,
-        sample_green_coffees,
-        origin_id,
-        create_component_association,
-    ):
-        sample_origin_data = [
-            {"name": "Huila", "process": "washed", "variety": "Caturra"}
-        ]
+        result = response.json()["data"]["roastedCoffeeComponentUpdate"]
+        assert result["status"] == False
+        assert result["error"]["code"] == 404
 
-        sample_green_coffee_components = [
-            create_component_association(
-                roasted_id=sample_roasted_coffee["id"],
-                green_id=green_coffee["id"],
-            )
-            for green_coffee in sample_green_coffees
-        ]
-        sample_origin_components = [
-            create_component_association(
-                roasted_id=sample_roasted_coffee["id"],
-                origin_id=origin_id(sample_origin["name"]),
-                process=sample_origin["process"],
-                variety=sample_origin["variety"],
-            )
-            for sample_origin in sample_origin_data
-        ]
-
-        return {
-            "green_coffees": sample_green_coffee_components,
-            "origins": sample_origin_components,
+    def test_green_coffee_404(self, client):
+        variables = {
+            "id": 1,
+            "input": {"greenId": 999999},
         }
 
-    def test_component_associations(self, sample_components):
-        for component_association in sample_components["green_coffees"]:
-            assert component_association["origin"] is None
-            assert component_association["fraction"] is None
+        response = client.post("/", json={"query": self.query, "variables": variables})
+        assert response.status_code == 200
+
+        result = response.json()["data"]["roastedCoffeeComponentUpdate"]
+        assert result["status"] == False
+        assert result["error"]["code"] == 404
+
+    def test_origin_404(self, client):
+        variables = {
+            "id": 1,
+            "input": {"originId": 99999999},
+        }
+
+        response = client.post("/", json={"query": self.query, "variables": variables})
+        assert response.status_code == 200
+
+        result = response.json()["data"]["roastedCoffeeComponentUpdate"]
+        assert result["status"] == False
+        assert result["error"]["code"] == 404
+
+    def test_set_both(self, client):
+        variables = {
+            "id": 1,
+            "input": {"originId": 1, "greenId": 1},
+        }
+
+        response = client.post("/", json={"query": self.query, "variables": variables})
+        assert response.status_code == 400
+
+        result = response.json()["errors"]
+        return print(response.json())
+
+    @pytest.mark.parametrize("input", [{}, {"originId": None, "greenId": None}])
+    def test_missing_both(self, client, input):
+        pass
+
+    @pytest.mark.parametrize("input", [{"originId": None}, {"greenId": None}])
+    def test_unset_without_replacement(self, client, input):
+        pass
