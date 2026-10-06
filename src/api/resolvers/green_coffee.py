@@ -1,16 +1,11 @@
-from __future__ import annotations
+from ariadne import ObjectType, InputType
+from sqlalchemy import insert
+from pydantic import ConfigDict, Json, MISSING
+from typing import TYPE_CHECKING
+from api.types import BaseModel
 
-from typing import TYPE_CHECKING, TypedDict
-from ariadne import ObjectType
-
+from .mutation import mutation_type, CoffeeTagInput
 from db import models, queries
-from api.types import (
-    GreenCoffeeInput,
-    CoffeeTagInput,
-    normalized_green_coffee_input,
-    normalized_green_coffee_tags,
-)
-from .mutation import mutation_type
 
 if TYPE_CHECKING:
     from graphql import GraphQLResolveInfo
@@ -18,14 +13,16 @@ if TYPE_CHECKING:
 SUPPORTED_TAG_TYPES = ["process", "variety", "tasting"]
 
 
-class GreenCoffeeSource(TypedDict, total=False):
-    name: str | None
-    source_type: str | None
-    producer_name: str | None
-    harvest_year: int | None
+class GreenCoffeeSource(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    name: str | None = None
+    source_type: str | None = None
+    producer_name: str | None = None
+    harvest_year: int | None = None
     country: models.Country
     origin: models.Origin
-    community: str | None
+    community: str | None = None
 
 
 green_coffee = ObjectType("GreenCoffee")
@@ -41,15 +38,15 @@ def resolve_green_coffee_source(
         origin = session.scalar(queries.GreenCoffee(green_coffee.id).get("origins"))
         country = origin.country
 
-    return {
-        "name": green_coffee.source,
-        "source_type": green_coffee.source_type,
-        "producer_name": green_coffee.details.get("producer_name"),
-        "harvest_year": green_coffee.details.get("harvest_year"),
-        "country": country,
-        "origin": origin,
-        "community": green_coffee.community,
-    }
+    return GreenCoffeeSource(
+        name=green_coffee.source,
+        source_type=green_coffee.source_type,
+        producer_name=green_coffee.details.get("producer_name"),
+        harvest_year=green_coffee.details.get("harvest_year"),
+        country=country,
+        origin=origin,
+        community=green_coffee.community,
+    )
 
 
 @green_coffee.field("processes")
@@ -112,31 +109,106 @@ def resolve_green_coffee_associations(
         ).all()
 
 
+class GreenCoffeeInput(BaseModel):
+    name: str | MISSING = MISSING
+    source: GreenCoffeeSourceInput | MISSING = MISSING
+    details: Json[dict] | MISSING = MISSING
+    processes: list[str] | MISSING = MISSING
+    varieties: list[str] | MISSING = MISSING
+    tasting: list[str] | MISSING = MISSING
+
+
+class GreenCoffeeSourceInput(BaseModel):
+    name: str | None | MISSING = MISSING
+    type: str | None | MISSING = MISSING
+    origin_id: int | None | MISSING = MISSING
+    community: str | None | MISSING = MISSING
+    details: Json[dict] | MISSING = MISSING
+
+
+class GreenCoffeePatch(BaseModel):
+    name: str | None | MISSING = MISSING
+    source: str | None | MISSING = MISSING
+    source_type: str | None | MISSING = MISSING
+    origin_id: int | None | MISSING = MISSING
+    community: str | None | MISSING = MISSING
+    details: dict | MISSING = MISSING
+
+
+def get_green_coffee_patch(input: GreenCoffeeInput) -> GreenCoffeePatch:
+    patch = GreenCoffeePatch(name=input.name, details=input.details)
+
+    if patch.details is MISSING:
+        patch.details = {}
+
+    if input.source is not MISSING:
+        patch.source = input.source.name
+        patch.source_type = input.source.type
+        patch.origin_id = input.source.origin_id
+        patch.community = input.source.community
+
+        if input.source.details is not MISSING:
+            patch.details.update(input.source.details)
+
+    return patch
+
+
+def get_green_coffee_tag_inputs(input: GreenCoffeeInput) -> list[CoffeeTagInput]:
+    result = []
+
+    if input.processes is not MISSING:
+        result.append(CoffeeTagInput(type="process", values=input.processes))
+
+    if input.varieties is not MISSING:
+        result.append(CoffeeTagInput(type="variety", values=input.varieties))
+
+    if input.tasting is not MISSING:
+        result.append(CoffeeTagInput(type="tasting", values=input.tasting))
+
+    return result
+
+
+green_coffee_input_type = InputType(
+    "GreenCoffeeInput", lambda data: GreenCoffeeInput(**data)
+)
+
+
 @mutation_type.field("greenCoffeeCreate")
 def resolve_green_coffee_create(_, info: GraphQLResolveInfo, input: GreenCoffeeInput):
     Session = info.context["Session"]
+    patch = get_green_coffee_patch(input)
+    tags = get_green_coffee_tag_inputs(input)
 
-    if input.get("name") is None:
+    if patch.name is MISSING or not patch.name:
         return {
             "status": False,
             "error": {"code": 400, "message": "Missing required field `name`"},
         }
 
-    normalized_input = normalized_green_coffee_input(input)
-    normalized_tags = normalized_green_coffee_tags(input)
+    try:
+        with Session() as session:
+            green_coffee = models.GreenCoffee(**patch.model_dump())
 
-    with Session() as session:
-        green_coffee = models.GreenCoffee(**normalized_input)
+            for tag in tags:
+                green_coffee.tags.extend(
+                    [
+                        models.GreenCoffeeTag(type=tag.type, value=value)
+                        for value in tag.values
+                    ]
+                )
 
-        for tag_data in normalized_tags:
-            green_coffee.tags.append(models.GreenCoffeeTag(**tag_data))
+            session.add(green_coffee)
 
-        session.add(green_coffee)
+            session.commit()
+            session.refresh(green_coffee)
 
-        session.commit()
-        session.refresh(green_coffee)
+        return {"status": True, "green_coffee": green_coffee}
 
-    return {"status": True, "green_coffee": green_coffee}
+    except:
+        return {
+            "status": False,
+            "error": {"code": 500, "message": "Internal Server Error"},
+        }
 
 
 @mutation_type.field("greenCoffeeUpdate")
@@ -144,35 +216,56 @@ def resolve_green_coffee_update(
     _, info: GraphQLResolveInfo, id: int, input: GreenCoffeeInput
 ):
     Session = info.context["Session"]
+    patch = get_green_coffee_patch(input)
+    tags = get_green_coffee_tag_inputs(input)
 
-    with Session() as session:
-        green_coffee = session.get(models.GreenCoffee, id)
+    if not patch.name:
+        return {
+            "status": False,
+            "error": {"code": 400, "message": "Cannot unset required field `name`"},
+        }
 
-        if green_coffee is None:
-            return {
-                "status": False,
-                "error": {
-                    "code": 404,
-                    "message": f"Green coffee with id `{id}` not found",
-                },
-            }
+    try:
+        with Session() as session:
+            green_coffee = session.get(models.GreenCoffee, id)
 
-        for key, value in normalized_green_coffee_input(input).items():
-            setattr(green_coffee, key, value)
+            if green_coffee is None:
+                return {
+                    "status": False,
+                    "error": {
+                        "code": 404,
+                        "message": f"Green coffee with id `{id}` not found",
+                    },
+                }
 
-        # clear tag entries
-        updated_tags = normalized_green_coffee_tags(input)
-        updated_tag_types = set([tag["type"] for tag in updated_tags])
+            for key, value in patch.model_dump().items():
+                setattr(green_coffee, key, value)
 
-        for tag_type in updated_tag_types:
-            session.execute(queries.GreenCoffee().clear_tag(green_id=id, type=tag_type))
+            # clear tag entries
+            updated_tag_types = set([tag.type for tag in tags])
 
-        # write new tags
-        for tag_data in updated_tags:
-            green_coffee.tags.append(models.GreenCoffeeTag(**tag_data))
+            for tag_type in updated_tag_types:
+                session.execute(
+                    queries.GreenCoffee().clear_tag(green_id=id, type=tag_type)
+                )
 
-        session.commit()
-        session.refresh(green_coffee)
+            # write new tags
+            for tag in tags:
+                green_coffee.tags.extend(
+                    [
+                        models.GreenCoffeeTag(type=tag.type, value=value)
+                        for value in tag.values
+                    ]
+                )
+
+            session.commit()
+            session.refresh(green_coffee)
+
+    except:
+        return {
+            "status": False,
+            "error": {"code": 500, "message": "Internal Server Error"},
+        }
 
     return {"status": True, "green_coffee": green_coffee}
 
@@ -182,31 +275,30 @@ def resolve_green_coffee_tag_add(
     _, info: GraphQLResolveInfo, id: int, input: CoffeeTagInput
 ):
     Session = info.context["Session"]
-    type = input["type"]
 
-    if "values" not in input:
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": f"Input is missing tag values for type `{type}`",
-            },
-        }
-
-    values = input["values"]
-
-    if type not in SUPPORTED_TAG_TYPES:
+    if (type := input.type) not in SUPPORTED_TAG_TYPES:
         return {
             "status": False,
             "error": {"code": 400, "message": f"Unsupported tag type `{type}`"},
         }
 
-    with Session() as session:
-        for value in values:
-            session.add(models.GreenCoffeeTag(green_id=id, type=type, value=value))
+    try:
+        with Session() as session:
+            session.add_all(
+                [
+                    models.GreenCoffeeTag(green_id=id, type=input.type, value=value)
+                    for value in input.values
+                ]
+            )
 
-        session.commit()
-        green_coffee = session.get(models.GreenCoffee, id)
+            session.commit()
+            green_coffee = session.get(models.GreenCoffee, id)
+
+    except:
+        return {
+            "status": False,
+            "error": {"code": 500, "message": "Internal Server Error"},
+        }
 
     return {"status": True, "green_coffee": green_coffee}
 
@@ -216,26 +308,27 @@ def resolve_green_coffee_tag_delete(
     _, info: GraphQLResolveInfo, id: int, input: CoffeeTagInput
 ):
     Session = info.context["Session"]
-    type = input["type"]
 
-    if type not in SUPPORTED_TAG_TYPES:
+    if input.type not in SUPPORTED_TAG_TYPES:
         return {
             "status": False,
             "error": {"code": 400, "message": f"Unsupported tag type `{type}`"},
         }
 
-    with Session() as session:
-        if "values" not in input:
-            session.execute(queries.GreenCoffee().clear_tag(green_id=id, type=type))
-
-        else:
-            values = input["values"]
-
+    try:
+        with Session() as session:
             session.execute(
-                queries.GreenCoffee().delete_tags(green_id=id, type=type, values=values)
+                queries.GreenCoffee().delete_tags(
+                    green_id=id, type=input.type, values=input.values
+                )
             )
 
-        session.commit()
-        green_coffee = session.get(models.GreenCoffee, id)
+            session.commit()
+            green_coffee = session.get(models.GreenCoffee, id)
+    except:
+        return {
+            "status": False,
+            "error": {"code": 500, "message": "Internal Server Error"},
+        }
 
     return {"status": True, "green_coffee": green_coffee}

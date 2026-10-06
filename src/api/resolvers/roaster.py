@@ -1,12 +1,12 @@
-from __future__ import annotations
+import json
+from ariadne import ObjectType, InputType
+from pydantic import StringConstraints, Json, MISSING
+from api.types import BaseModel
 
-from ariadne import ObjectType
-
-from .mutation import mutation_type
+from .mutation import mutation_type, LocationInput
 from db import models
-from api.types import normalized_roaster_input
 
-from typing import TYPE_CHECKING
+from typing import Annotated, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from graphql import GraphQLResolveInfo
@@ -37,19 +37,70 @@ def resolve_roaster_equipment(roaster: models.Roaster, _info):
     }
 
 
+class RoastingEquipmentInput(BaseModel):
+    brand: str | None | MISSING = MISSING
+    model: str | None | MISSING = MISSING
+    capacity: float | None | MISSING = MISSING
+
+
+class RoasterInput(BaseModel):
+    name: (
+        Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)] | MISSING
+    ) = MISSING
+    location: LocationInput | MISSING = MISSING
+    equipment: RoastingEquipmentInput | MISSING = MISSING
+    details: Json[dict] | MISSING = MISSING
+
+
+class RoasterPatch(BaseModel):
+    name: (
+        Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)] | MISSING
+    ) = MISSING
+    city: str | None | MISSING = MISSING
+    state: str | None | MISSING = MISSING
+    country: (
+        Annotated[
+            str, StringConstraints(min_length=2, max_length=2, strip_whitespace=True)
+        ]
+        | MISSING
+    ) = MISSING
+    equipment_brand: str | None | MISSING = MISSING
+    equipment_model: str | None | MISSING = MISSING
+    equipment_capacity: float | None | MISSING = MISSING
+    details: dict | MISSING = MISSING
+
+
+def get_roaster_patch(input: RoasterInput) -> RoasterPatch:
+    patch = RoasterPatch(name=input.name, details=input.details)
+
+    if input.location is not MISSING:
+        patch.city = input.location.city
+        patch.state = input.location.state
+        patch.country = input.location.country_id
+
+    if input.equipment is not MISSING:
+        patch.equipment_brand = input.equipment.brand
+        patch.equipment_model = input.equipment.model
+        patch.equipment_capacity = input.equipment.capacity
+
+    return patch
+
+
+roaster_input_type = InputType("RoasterInput", lambda data: RoasterInput(**data))
+
+
 @mutation_type.field("roasterCreate")
-def resolve_roaster_create(_, info: GraphQLResolveInfo, input):
-    if input.get("name") is None:
+def resolve_roaster_create(_, info: GraphQLResolveInfo, input: RoasterInput):
+    Session = info.context["Session"]
+    patch = get_roaster_patch(input)
+
+    if patch.name is MISSING:
         return {
             "status": False,
             "error": {"code": 400, "message": "Missing required field `name`"},
         }
 
-    if (
-        ("location" not in input)
-        or ("country_id" not in input["location"])
-        or (input["location"]["country_id"] is None)
-    ):
+    if patch.country is MISSING:
         return {
             "status": False,
             "error": {
@@ -59,52 +110,31 @@ def resolve_roaster_create(_, info: GraphQLResolveInfo, input):
         }
 
     try:
-        normalized_input = normalized_roaster_input(input)
+        with Session() as session:
+            roaster = models.Roaster(**patch.model_dump())
+            session.add(roaster)
+
+            session.commit()
+            session.refresh(roaster)
+
+        return {"status": True, "roaster": roaster}
+
     except:
         return {
             "status": False,
-            "error": {"code": 400, "message": "Bad Request"},
+            "error": {"code": 500, "message": "Internal Server Error"},
         }
-
-    Session = info.context["Session"]
-
-    with Session() as session:
-        roaster = models.Roaster(**normalized_input)
-        session.add(roaster)
-
-        session.commit()
-        session.refresh(roaster)
-
-    return {"status": True, "roaster": roaster}
 
 
 @mutation_type.field("roasterUpdate")
-def resolve_roaster_update(_, info, id, input):
+def resolve_roaster_update(_, info: GraphQLResolveInfo, id: int, input: RoasterInput):
     Session = info.context["Session"]
-
-    if "name" in input and input["name"] is None:
-        return {
-            "status": False,
-            "error": {"code": 400, "message": "Cannot unset required field `name`"},
-        }
-
-    if "location" in input:
-        if input["location"] is None or (
-            "country_id" in input["location"]
-            and input["location"]["country_id"] is None
-        ):
-            return {
-                "status": False,
-                "error": {
-                    "code": 400,
-                    "message": "Cannot unset required field `location.countryId`",
-                },
-            }
+    patch = get_roaster_patch(input)
 
     with Session() as session:
         roaster = session.get(models.Roaster, id)
 
-        for key, value in normalized_roaster_input(input).items():
+        for key, value in patch.model_dump().items():
             setattr(roaster, key, value)
 
         session.commit()
