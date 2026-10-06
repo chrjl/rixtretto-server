@@ -1,5 +1,4 @@
 from .query import query
-from .mutation import mutation_type
 from .origin import origin
 from .country import country
 from .roaster import roaster
@@ -10,9 +9,10 @@ from .coffee_service import coffee_service
 from .menu_item import menu_item
 from .ingredient import ingredient
 
-types = [
+from .mutation import mutation_type
+
+object_types = [
     query,
-    mutation_type,
     origin,
     country,
     roaster,
@@ -21,5 +21,8 @@ types = [
     component_association,
     coffee_service,
     menu_item,
-    ingredient
+    ingredient,
+]
+
+input_types = []
 ]
