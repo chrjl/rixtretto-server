@@ -43,7 +43,7 @@ def create_roaster(client):
             "input": {
                 "name": roaster_name,
                 "location": {"countryId": country, "state": state, "city": city},
-                "details": json.dumps(details),
+                "details": json.dumps(details or {}),
             }
         }
 
@@ -299,7 +299,7 @@ def create_component_association(client):
         variety: str | None = None,
     ):
         query = """
-        mutation($id: ID!, $input: CoffeeComponentInput) {
+        mutation($id: ID!, $input: CoffeeComponentInput!) {
             roastedCoffeeComponentAdd(id: $id, input: $input) {
                 roastedCoffee {
                     id
@@ -309,15 +309,6 @@ def create_component_association(client):
                         name
                     }
                 }
-                greenCoffee {
-                    id
-                    name
-                }
-                origin {
-                    id
-                    name
-                }
-                fraction
             }
         }
         """

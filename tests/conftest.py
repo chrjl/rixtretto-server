@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 from db import models
 from api.main import app
 from bin.seed_countries_regions import generate_country_objects, generate_origin_objects
+from bin.seed.seed_coffee_tags import sample_coffee_tag_type_objects
 from bin.seed import SAMPLE_DATA_DIR
 
 # Set up environment
@@ -38,6 +39,12 @@ def engine(request):
         # Seed country and origin tables
         session.add_all(generate_country_objects())
         session.add_all(generate_origin_objects())
+
+        # Seed coffee tag types
+        for coffee_tag_type in sample_coffee_tag_type_objects():
+            if session.get(models.CoffeeTagType, coffee_tag_type.name) is None:
+                session.add(coffee_tag_type)
+
         session.commit()
 
     if use_sample_data and (use_sample_data.args[0] is True):
