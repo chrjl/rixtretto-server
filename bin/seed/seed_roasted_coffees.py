@@ -8,7 +8,7 @@ def roasted_coffee_data(path):
     result = []
 
     with open(path + "roasted-coffee.csv") as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(csvfile, quoting=csv.QUOTE_NOTNULL)
         for row in reader:
             for column in list_columns:
                 row[column] = row[column].split(";") if row.get(column) else []
@@ -22,7 +22,7 @@ def coffee_association_data(path):
     result = []
 
     with open(path + "coffee-associations.csv") as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(csvfile, quoting=csv.QUOTE_NOTNULL)
 
         for row in reader:
             if green_name := row["green_name"]:
