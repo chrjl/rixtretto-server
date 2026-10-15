@@ -1,6 +1,8 @@
 import pytest
 import json
+import re
 from datetime import datetime
+from httpx2 import Response
 
 
 @pytest.mark.usefixtures("seed_sample_roasters")
@@ -799,78 +801,303 @@ def test_roasted_coffee_origin_component_update(
     assert result["components"][0]["fraction"] is None
 
 
-@pytest.mark.skip()
 @pytest.mark.usefixtures("seed_sample_roasters")
 @pytest.mark.usefixtures("seed_sample_green_coffees")
 @pytest.mark.usefixtures("seed_sample_roasted_coffees")
-class TestRoastedCoffeeComponentUpdateErrorHandling:
-    query = """
-    mutation($id: ID!, $input: CoffeeComponentInput!) {
-        roastedCoffeeComponentUpdate(id: $id, input: $input) {
-            status
-            error {
-                code
-                message
+class TestRoastedCoffeeComponentErrorHandling:
+    @pytest.fixture
+    def associate_component(self, request, client):
+        echo_response = request.node.get_closest_marker("echo_response")
+
+        query = """
+            mutation($id: ID!, $input: CoffeeComponentInput!) {
+                roastedCoffeeComponentAdd(id: $id, input: $input) {
+                    status
+                    error {
+                        code
+                        message
+                    }
+                    roastedCoffee {
+                        id
+                        components {
+                            greenCoffee {
+                                id
+                                name
+                            }
+                            origin {
+                                id
+                                name
+                            }
+                        }
+                    }
+                }
             }
-        }
-    }
-    """
+        """
 
-    def test_roasted_coffee_404(self, client):
-        variables = {
-            "id": 9999,
-            "input": {"originId": 1},
-        }
+        def _associate_component(roasted_id: int, input: dict) -> Response:
+            variables = {"id": roasted_id, "input": input}
+            response = client.post("/", json={"query": query, "variables": variables})
 
-        response = client.post("/", json={"query": self.query, "variables": variables})
+            if (echo_response is not None) and (echo_response.args[0]):
+                print(response.status_code)
+                print(response.json())
+
+            return response
+
+        return _associate_component
+
+    @pytest.fixture
+    def delete_component(self, request, client):
+        echo_response = request.node.get_closest_marker("echo_response")
+
+        query = """
+            mutation($id: ID!, $input: CoffeeComponentInput!) {
+                roastedCoffeeComponentDelete(id: $id, input: $input) {
+                    status
+                    error {
+                        code
+                        message
+                    }
+                    roastedCoffee {
+                        id
+                        name
+                    }
+                }
+            }
+        """
+
+        def _delete_component(roasted_id: int, input: dict) -> Response:
+            variables = {"id": roasted_id, "input": input}
+            response = client.post("/", json={"query": query, "variables": variables})
+
+            if (echo_response is not None) and (echo_response.args[0]):
+                print(response.status_code)
+                print(response.json())
+
+            return response
+
+        return _delete_component
+
+    @pytest.fixture
+    def update_component(self, request, client):
+        echo_response = request.node.get_closest_marker("echo_response")
+
+        query = """
+            mutation($id: ID!, $input: CoffeeComponentInput!) {
+                roastedCoffeeComponentUpdate(id: $id, input: $input) {
+                    status
+                    error {
+                        code
+                        message
+                    }
+                    roastedCoffee {
+                        id
+                        name
+                    }
+                }
+            }
+        """
+
+        def _update_component(roasted_id: int, input: dict) -> Response:
+            variables = {"id": roasted_id, "input": input}
+            response = client.post("/", json={"query": query, "variables": variables})
+
+            if (echo_response is not None) and (echo_response.args[0]):
+                print(response.status_code)
+                print(response.json())
+
+            return response
+
+        return _update_component
+
+    @pytest.fixture
+    def sample_id(self, client) -> int:
+        query = """
+            query {
+                roastedCoffees {
+                    id
+                }
+            }
+        """
+
+        response = client.post("/", json={"query": query})
         assert response.status_code == 200
 
-        result = response.json()["data"]["roastedCoffeeComponentUpdate"]
-        assert result["status"] == False
-        assert result["error"]["code"] == 404
+        roasted_coffees = response.json()["data"]["roastedCoffees"]
+        return roasted_coffees[0]["id"]
 
-    def test_green_coffee_404(self, client):
-        variables = {
-            "id": 1,
-            "input": {"greenId": 999999},
-        }
+    @pytest.fixture
+    def sample_green_id(self, client) -> int:
+        query = """
+            query {
+                greenCoffees {
+                    id
+                }
+            }
+        """
 
-        response = client.post("/", json={"query": self.query, "variables": variables})
+        response = client.post("/", json={"query": query})
         assert response.status_code == 200
 
-        result = response.json()["data"]["roastedCoffeeComponentUpdate"]
-        assert result["status"] == False
-        assert result["error"]["code"] == 404
+        green_coffees = response.json()["data"]["greenCoffees"]
+        return green_coffees[0]["id"]
 
-    def test_origin_404(self, client):
-        variables = {
-            "id": 1,
-            "input": {"originId": 99999999},
-        }
+    @pytest.mark.echo_response(False)
+    @pytest.mark.parametrize(
+        "id, input, http_status, error_code, keyword",
+        [
+            (9999, {"originId": 1}, 200, 404, "roasted coffee"),  # roasted coffee 404
+            (None, {"greenId": 999999}, 200, 404, "green coffee"),  # green coffee 404
+            (None, {"originId": 999999}, 200, 404, "origin"),  # origin 404
+            (None, {"originId": 1, "greenId": 1}, 400, None, "validation"),  # set both
+            (None, {}, 400, None, "validation"),  # missing both
+            (
+                None,
+                {"originId": None, "greenId": None},
+                400,
+                None,
+                "validation",
+            ),  # validation errors
+        ],
+    )
+    def test_create_association_errors(
+        self,
+        associate_component,
+        id,
+        sample_id,
+        input,
+        http_status,
+        error_code,
+        keyword,
+    ):
+        response = associate_component(id if id is not None else sample_id, input)
+        assert response.status_code == http_status
 
-        response = client.post("/", json={"query": self.query, "variables": variables})
-        assert response.status_code == 200
+        match (response.status_code):
+            case 200:
+                result = response.json()["data"]["roastedCoffeeComponentAdd"]
+                assert result["status"] == False
+                assert result["error"]["code"] == error_code
 
-        result = response.json()["data"]["roastedCoffeeComponentUpdate"]
-        assert result["status"] == False
-        assert result["error"]["code"] == 404
+                if keyword:
+                    assert re.search(keyword, result["error"]["message"], re.I)
 
-    def test_set_both(self, client):
-        variables = {
-            "id": 1,
-            "input": {"originId": 1, "greenId": 1},
-        }
+            case 400:
+                errors = response.json()["errors"]
 
-        response = client.post("/", json={"query": self.query, "variables": variables})
-        assert response.status_code == 400
+                if keyword:
+                    assert re.search(keyword, errors[0]["message"], re.I)
 
-        result = response.json()["errors"]
-        return print(response.json())
+    @pytest.mark.echo_response(False)
+    @pytest.mark.parametrize(
+        "id, input, http_status, error_code, keyword",
+        [
+            (0, {"originId": 1}, 200, 404, "roasted coffee"),  # roasted coffee 404
+            (None, {"greenId": 0}, 200, 404, "green coffee"),  # green coffee 404
+            (None, {"originId": 0}, 200, 404, "origin"),  # origin 404
+            (None, {"originId": 1, "greenId": 1}, 400, None, "validation"),  # set both
+            (None, {}, 400, None, "validation"),  # missing both
+        ],
+    )
+    def test_delete_association_errors(
+        self,
+        associate_component,
+        delete_component,
+        id,
+        sample_id,
+        sample_green_id,
+        input,
+        http_status,
+        error_code,
+        keyword,
+    ):
+        sample_create_associations_data = [
+            {"id": sample_id, "input": {"greenId": sample_green_id}},
+            {
+                "id": sample_id,
+                "input": {"originId": 1, "variety": "Caturra", "process": "washed"},
+            },
+        ]
 
-    @pytest.mark.parametrize("input", [{}, {"originId": None, "greenId": None}])
-    def test_missing_both(self, client, input):
-        pass
+        create_responses = [
+            associate_component(sample_id, association["input"])
+            for association in sample_create_associations_data
+        ]
 
-    @pytest.mark.parametrize("input", [{"originId": None}, {"greenId": None}])
-    def test_unset_without_replacement(self, client, input):
-        pass
+        response = delete_component(id if id is not None else sample_id, input)
+
+        assert response.status_code == http_status
+
+        match (response.status_code):
+            case 200:
+                result = response.json()["data"]["roastedCoffeeComponentDelete"]
+                assert result["status"] == False
+                assert result["error"]["code"] == error_code
+
+                if keyword:
+                    assert re.search(keyword, result["error"]["message"], re.I)
+
+            case 400:
+                errors = response.json()["errors"]
+
+                if keyword:
+                    assert re.search(keyword, errors[0]["message"], re.I)
+
+    @pytest.mark.echo_response(False)
+    @pytest.mark.parametrize(
+        "id, input, http_status, error_code, keyword",
+        [
+            (0, {"greenId": 1}, 200, 404, "roasted coffee"),  # roasted coffee 404
+            (None, {"greenId": 0}, 200, 404, "green coffee"),  # green coffee 404
+            (
+                None,
+                {"originId": 1},
+                200,
+                404,
+                "(origin, process, variety)",
+            ),  # origin 404
+        ],
+    )
+    def test_update_association_errors(
+        self,
+        associate_component,
+        update_component,
+        id,
+        sample_id,
+        sample_green_id,
+        input,
+        http_status,
+        error_code,
+        keyword,
+    ):
+        sample_create_associations_data = [
+            {"id": sample_id, "input": {"greenId": sample_green_id}},
+            {
+                "id": sample_id,
+                "input": {"originId": 1, "variety": "Caturra", "process": "washed"},
+            },
+        ]
+
+        create_responses = [
+            associate_component(sample_id, association["input"])
+            for association in sample_create_associations_data
+        ]
+
+        response = update_component(id if id is not None else sample_id, input)
+
+        assert response.status_code == http_status
+
+        match (response.status_code):
+            case 200:
+                result = response.json()["data"]["roastedCoffeeComponentUpdate"]
+                assert result["status"] == False
+                assert result["error"]["code"] == error_code
+
+                if keyword:
+                    assert re.search(keyword, result["error"]["message"], re.I)
+
+            case 400:
+                errors = response.json()["errors"]
+
+                if keyword:
+                    assert re.search(keyword, errors[0]["message"], re.I)
