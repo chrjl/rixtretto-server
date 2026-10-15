@@ -2,7 +2,7 @@ import os, json, csv
 import pytest
 from dotenv import load_dotenv
 from starlette.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
@@ -36,6 +36,8 @@ def engine(request):
     models.Base.metadata.create_all(engine)
 
     with Session(engine) as session:
+        session.execute(text("PRAGMA foreign_keys=ON"))
+
         # Seed country and origin tables
         session.add_all(generate_country_objects())
         session.add_all(generate_origin_objects())
@@ -53,6 +55,9 @@ def engine(request):
         seed_sample_data(engine)
 
     yield engine
+
+    with Session(engine) as session:
+        session.execute(text("PRAGMA foreign_keys=OFF"))
 
     models.Base.metadata.drop_all(engine)
 
