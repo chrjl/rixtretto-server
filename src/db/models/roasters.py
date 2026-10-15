@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String
+from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -74,7 +74,7 @@ class Roaster(BaseWithNormalizedName):
     city: Mapped[str | None]
     state: Mapped[str | None]
     country: Mapped[str] = mapped_column(
-        String(length=2), comment="Two letter country code (ISO 3166-1 alpha-2)"
+        ForeignKey("countries.id")
     )
     details: Mapped[dict] = mapped_column(
         nullable=True,
