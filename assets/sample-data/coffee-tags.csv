@@ -1,0 +1,5 @@
+name,description
+process,"[str]"
+variety,"[str]"
+profile,"[str] The vendor's intended attributes and uses, as well as information about single-origin/blend/decaf."
+tasting,"[str] Vendor-provided tasting notes."
