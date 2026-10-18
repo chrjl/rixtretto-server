@@ -1,9 +1,8 @@
-from ariadne import ObjectType, InputType
 from pydantic import StringConstraints, MISSING, model_validator
 from typing import Annotated, Self, TYPE_CHECKING
 from datetime import datetime
-from api.types import BaseModel
 from sqlalchemy import select
+from api.types import BaseModel, ObjectType, InputType
 
 from .mutation import mutation_type, CoffeeTagInput
 from db import models, queries
@@ -151,16 +150,10 @@ def resolve_roasted_coffee_create(
     Session = info.context["Session"]
 
     if input.name is MISSING or not input.name:
-        return {
-            "status": False,
-            "error": {"code": 400, "message": "Missing required field `name`"},
-        }
+        raise ValueError("Missing required field `name`")
 
     if input.roaster_id is MISSING:
-        return {
-            "status": False,
-            "error": {"code": 400, "message": "Missing required field `roasterId`"},
-        }
+        raise ValueError("Missing required field `roasterId`")
 
     roasted_coffee = models.RoastedCoffee(
         name=input.name,
@@ -207,13 +200,7 @@ def resolve_roasted_coffee_update(
         roasted_coffee = session.get(models.RoastedCoffee, id)
 
         if roasted_coffee is None:
-            return {
-                "status": False,
-                "error": {
-                    "code": 404,
-                    "message": f"Roasted coffee with id `{id}` not found",
-                },
-            }
+            raise LookupError(f"Roasted coffee with id `{id}` not found")
 
         for column in ["name", "roaster_id", "date_added", "date_removed"]:
             if (value := getattr(input, column)) is not MISSING:
@@ -248,10 +235,7 @@ def resolve_roasted_coffee_tag_add(
     type = input.type
 
     if type not in SUPPORTED_TAG_TYPES:
-        return {
-            "status": False,
-            "error": {"code": 400, "message": f"Unsupported tag type `{type}`"},
-        }
+        raise ValueError(f"Unsupported tag type `{type}`")
 
     with Session() as session:
         session.add_all(
@@ -273,11 +257,8 @@ def resolve_roasted_coffee_tag_delete(
 ):
     Session = info.context["Session"]
 
-    if input.type not in SUPPORTED_TAG_TYPES:
-        return {
-            "status": False,
-            "error": {"code": 400, "message": f"Unsupported tag type `{type}`"},
-        }
+    if (type := input.type) not in SUPPORTED_TAG_TYPES:
+        raise ValueError(f"Unsupported tag type `{type}`")
 
     with Session() as session:
         session.execute(
@@ -335,13 +316,7 @@ def resolve_roasted_coffee_component_add(
     with Session() as session:
         roasted_coffee = session.get(models.RoastedCoffee, id)
         if roasted_coffee is None:
-            return {
-                "status": False,
-                "error": {
-                    "code": 404,
-                    "message": f"Roasted coffee with id `{id}` not found",
-                },
-            }
+            raise LookupError(f"Roasted coffee with id `{id}` not found")
 
         component_association = models.CoffeeComponent(
             roasted_id=id,
@@ -361,13 +336,7 @@ def resolve_roasted_coffee_component_add(
             green_coffee = session.get(models.GreenCoffee, green_id)
 
             if green_coffee is None:
-                return {
-                    "status": False,
-                    "error": {
-                        "code": 404,
-                        "message": f"Green coffee with id `{green_id}` not found",
-                    },
-                }
+                raise LookupError(f"Green coffee with id `{green_id}` not found")
 
             component_association.green_id = green_id
 
@@ -379,13 +348,7 @@ def resolve_roasted_coffee_component_add(
             origin = session.get(models.Origin, origin_id)
 
             if origin is None:
-                return {
-                    "status": False,
-                    "error": {
-                        "code": 404,
-                        "message": f"Origin with id `{origin_id}` not found",
-                    },
-                }
+                raise LookupError(f"Origin with id `{origin_id}` not found")
 
             component_association.origin_id = origin_id
             component_association.process = input_data.get("process")
@@ -417,13 +380,7 @@ def resolve_roasted_coffee_component_delete(
         roasted_coffee = session.get(models.RoastedCoffee, id)
 
         if roasted_coffee is None:
-            return {
-                "status": False,
-                "error": {
-                    "code": 404,
-                    "message": f"Roasted coffee with id `{id}` not found",
-                },
-            }
+            raise LookupError(f"Roasted coffee with id `{id}` not found")
 
         if green_id is not None:
             component_exists = session.scalar(
@@ -437,13 +394,7 @@ def resolve_roasted_coffee_component_delete(
             )
 
             if not component_exists:
-                return {
-                    "status": False,
-                    "error": {
-                        "code": 404,
-                        "message": f"Green coffee with id `{green_id}` not found",
-                    },
-                }
+                raise LookupError(f"Green coffee with id `{green_id}` not found")
 
             session.execute(
                 queries.RoastedCoffee().delete_component(
@@ -468,13 +419,7 @@ def resolve_roasted_coffee_component_delete(
             )
 
             if not component_exists:
-                return {
-                    "status": False,
-                    "error": {
-                        "code": 404,
-                        "message": f"Origin with id `{origin_id}` not found",
-                    },
-                }
+                raise LookupError(f"Origin with id `{origin_id}` not found")
 
             session.execute(
                 queries.RoastedCoffee().delete_component(
@@ -518,13 +463,9 @@ def resolve_roasted_coffee_component_update(
             )
 
             if not association_exists:
-                return {
-                    "status": False,
-                    "error": {
-                        "code": 404,
-                        "message": f"Roasted coffee with id `{id}` is not associated with green coffee with id `{green_id}`",
-                    },
-                }
+                raise LookupError(
+                    f"Roasted coffee with id `{id}` is not associated with green coffee with id `{green_id}`"
+                )
 
         if origin_id is not None:
             association_exists = session.scalar(
@@ -542,13 +483,9 @@ def resolve_roasted_coffee_component_update(
             )
 
             if not association_exists:
-                return {
-                    "status": False,
-                    "error": {
-                        "code": 404,
-                        "message": f"Roasted coffee with id `{id}` is not associated with (origin, process, variety) = `({origin_id}, {process}, {variety})`",
-                    },
-                }
+                raise LookupError(
+                    f"Roasted coffee with id `{id}` is not associated with (origin, process, variety) = `({origin_id}, {process}, {variety})`"
+                )
 
         session.execute(
             queries.RoastedCoffee().update_component(

@@ -1,7 +1,6 @@
-from ariadne import MutationType, InputType
 from pydantic import StringConstraints, MISSING
 from typing import Annotated
-from api.types import BaseModel
+from api.types import BaseModel, InputType, MutationType
 
 mutation_type = MutationType()
 

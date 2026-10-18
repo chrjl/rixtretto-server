@@ -1,7 +1,6 @@
 import json
-from ariadne import ObjectType, InputType
 from pydantic import StringConstraints, Json, MISSING
-from api.types import BaseModel
+from api.types import BaseModel, InputType, ObjectType
 
 from .mutation import mutation_type, LocationInput
 from db import models
@@ -95,35 +94,19 @@ def resolve_roaster_create(_, info: GraphQLResolveInfo, input: RoasterInput):
     patch = get_roaster_patch(input)
 
     if patch.name is MISSING:
-        return {
-            "status": False,
-            "error": {"code": 400, "message": "Missing required field `name`"},
-        }
+        raise ValueError("Missing required field `name`")
 
     if patch.country is MISSING:
-        return {
-            "status": False,
-            "error": {
-                "code": 400,
-                "message": "Missing required field `location.countryId`",
-            },
-        }
+        raise ValueError("Missing required field `location.countryId`")
 
-    try:
-        with Session() as session:
-            roaster = models.Roaster(**patch.model_dump())
-            session.add(roaster)
+    with Session() as session:
+        roaster = models.Roaster(**patch.model_dump())
+        session.add(roaster)
 
-            session.commit()
-            session.refresh(roaster)
+        session.commit()
+        session.refresh(roaster)
 
-        return {"status": True, "roaster": roaster}
-
-    except:
-        return {
-            "status": False,
-            "error": {"code": 500, "message": "Internal Server Error"},
-        }
+    return {"status": True, "roaster": roaster}
 
 
 @mutation_type.field("roasterUpdate")
