@@ -1,5 +1,4 @@
-from ariadne import ObjectType
-
+from api.types import ObjectType
 from db.queries.utilities.filters import Filter, LocationFilter, NameFilter
 from db import models, queries
 

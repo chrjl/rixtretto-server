@@ -1,4 +1,4 @@
-from ariadne import ObjectType
+from api.types import ObjectType
 from graphql import GraphQLResolveInfo
 
 from db import models, queries

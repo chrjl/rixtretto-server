@@ -1,6 +1,5 @@
 from __future__ import annotations
-from ariadne import QueryType
-from sqlalchemy import select
+from api.types import ObjectType
 
 from db import models, queries
 from db.queries.utilities import Filter
@@ -12,7 +11,7 @@ if TYPE_CHECKING:
     from graphql import GraphQLResolveInfo
 
 
-query = QueryType()
+query = ObjectType("Query")
 
 
 @query.field("hello")

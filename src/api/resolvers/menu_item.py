@@ -1,5 +1,4 @@
-from ariadne import ObjectType
-
+from api.types import ObjectType
 from db import queries
 
 from typing import TYPE_CHECKING

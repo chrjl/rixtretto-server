@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-from ariadne import ObjectType
-
-# from sqlalchemy.orm import Session
-
-from db.main import engine
+from api.types import ObjectType
 from db import queries
 
 from typing import TYPE_CHECKING
