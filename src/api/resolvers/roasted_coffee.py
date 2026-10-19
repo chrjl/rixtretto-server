@@ -3,6 +3,7 @@ from pydantic import StringConstraints, MISSING, model_validator
 from typing import Annotated, Self, TYPE_CHECKING
 from datetime import datetime
 from api.types import BaseModel
+from sqlalchemy import select
 
 from .mutation import mutation_type, CoffeeTagInput
 from db import models, queries
@@ -424,15 +425,65 @@ def resolve_roasted_coffee_component_delete(
                 },
             }
 
-        session.execute(
-            queries.RoastedCoffee().delete_component(
-                roasted_id=id,
-                green_id=green_id,
-                origin_id=origin_id,
-                process=process,
-                variety=variety,
+        if green_id is not None:
+            component_exists = session.scalar(
+                select(
+                    queries.CoffeeComponent()
+                    .filter_by_roasted_coffee(roasted_ids=[id])
+                    .filter_by_green_coffee(green_ids=[green_id])
+                    .select()
+                    .exists()
+                )
             )
-        )
+
+            if not component_exists:
+                return {
+                    "status": False,
+                    "error": {
+                        "code": 404,
+                        "message": f"Green coffee with id `{green_id}` not found",
+                    },
+                }
+
+            session.execute(
+                queries.RoastedCoffee().delete_component(
+                    roasted_id=id,
+                    green_id=green_id,
+                )
+            )
+
+        elif origin_id is not None:
+            component_exists = session.scalar(
+                select(
+                    queries.CoffeeComponent()
+                    .filter_by_roasted_coffee(roasted_ids=[id])
+                    .filter_by_origin(origin_ids=[origin_id], include_suborigins=False)
+                    .select()
+                    .where(
+                        models.CoffeeComponent.variety == variety,
+                        models.CoffeeComponent.process == process,
+                    )
+                    .exists()
+                )
+            )
+
+            if not component_exists:
+                return {
+                    "status": False,
+                    "error": {
+                        "code": 404,
+                        "message": f"Origin with id `{origin_id}` not found",
+                    },
+                }
+
+            session.execute(
+                queries.RoastedCoffee().delete_component(
+                    roasted_id=id,
+                    origin_id=origin_id,
+                    process=process,
+                    variety=variety,
+                )
+            )
 
         session.commit()
         roasted_coffee = session.get(models.RoastedCoffee, id)
@@ -455,16 +506,49 @@ def resolve_roasted_coffee_component_update(
     fraction = input_data.get("fraction")
 
     with Session() as session:
-        roasted_coffee = session.get(models.RoastedCoffee, id)
+        if green_id is not None:
+            association_exists = session.scalar(
+                select(
+                    queries.CoffeeComponent()
+                    .filter_by_roasted_coffee([id])
+                    .filter_by_green_coffee([green_id])
+                    .select()
+                    .exists()
+                )
+            )
 
-        if roasted_coffee is None:
-            return {
-                "status": False,
-                "error": {
-                    "code": 404,
-                    "message": f"Roasted coffee with id `{id}` not found",
-                },
-            }
+            if not association_exists:
+                return {
+                    "status": False,
+                    "error": {
+                        "code": 404,
+                        "message": f"Roasted coffee with id `{id}` is not associated with green coffee with id `{green_id}`",
+                    },
+                }
+
+        if origin_id is not None:
+            association_exists = session.scalar(
+                select(
+                    queries.CoffeeComponent()
+                    .filter_by_roasted_coffee(roasted_ids=[id])
+                    .filter_by_origin(origin_ids=[origin_id], include_suborigins=False)
+                    .select()
+                    .where(
+                        models.CoffeeComponent.variety == variety,
+                        models.CoffeeComponent.process == process,
+                    )
+                    .exists()
+                )
+            )
+
+            if not association_exists:
+                return {
+                    "status": False,
+                    "error": {
+                        "code": 404,
+                        "message": f"Roasted coffee with id `{id}` is not associated with (origin, process, variety) = `({origin_id}, {process}, {variety})`",
+                    },
+                }
 
         session.execute(
             queries.RoastedCoffee().update_component(
@@ -478,6 +562,6 @@ def resolve_roasted_coffee_component_update(
         )
 
         session.commit()
-        session.refresh(roasted_coffee)
 
+    roasted_coffee = session.get(models.RoastedCoffee, id)
     return {"status": True, "roasted_coffee": roasted_coffee}
