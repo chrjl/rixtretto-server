@@ -179,7 +179,7 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
                 .values(fraction=fraction)
             )
 
-    def origins(self) -> Select[tuple[models.Origin]]:
+    def origins(self) -> Select[models.Origin]:
         """List of `Origin` objects of components of a `RoastedCoffee`.
 
         Resolves both:
@@ -203,7 +203,7 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
 
         return select(models.Origin).where(models.Origin.id.in_(origin_ids_q))
 
-    def processes(self) -> CompoundSelect[tuple[str]]:
+    def processes(self) -> CompoundSelect[str]:
         """Return all green coffee processing methods of component coffees."""
 
         green_coffee_query = (
@@ -232,7 +232,7 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
 
         return green_coffee_query.union(generic_component_query)
 
-    def varieties(self) -> CompoundSelect[tuple[str]]:
+    def varieties(self) -> CompoundSelect[str]:
         """Return all varieties of component coffees."""
 
         green_coffee_query = (
@@ -260,7 +260,7 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
 
         return green_coffee_query.union(generic_component_query)
 
-    def tasting(self) -> Select[tuple[str]]:
+    def tasting(self) -> Select[str]:
         """Return the roaster's provided tasting notes."""
 
         return select(models.RoastedCoffeeTag.value).where(
@@ -268,7 +268,7 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
             models.RoastedCoffeeTag.roasted_id.in_(self.select(["id"])),
         )
 
-    def profiles(self) -> Select[tuple[str]]:
+    def profiles(self) -> Select[str]:
         """Return the roaster's intended roast profiles."""
 
         return select(models.RoastedCoffeeTag.value).where(
@@ -276,7 +276,7 @@ class RoastedCoffee(Base[models.RoastedCoffee]):
             models.RoastedCoffeeTag.roasted_id.in_(self.select(["id"])),
         )
 
-    def associations(self) -> Select[tuple[models.CoffeeComponent]]:
+    def associations(self) -> Select[models.CoffeeComponent]:
         return select(models.CoffeeComponent).where(
             models.CoffeeComponent.roasted_id.in_(self.select(["id"]))
         )

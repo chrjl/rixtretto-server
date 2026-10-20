@@ -18,7 +18,7 @@ class CoffeeComponent(Base[models.CoffeeComponent]):
 
     def filter_by_roasted_coffee(
         self,
-        roasted_ids: list[int] | Select[tuple[models.RoastedCoffee]] = [],
+        roasted_ids: list[int] | Select[models.RoastedCoffee] = [],
     ) -> Self:
         self._filters.append(models.CoffeeComponent.roasted_id.in_(roasted_ids))
 
@@ -26,7 +26,7 @@ class CoffeeComponent(Base[models.CoffeeComponent]):
 
     def filter_by_green_coffee(
         self,
-        green_ids: list[int] | Select[tuple[models.GreenCoffee]] = [],
+        green_ids: list[int] | Select[models.GreenCoffee] = [],
     ) -> Self:
         self._filters.append(models.CoffeeComponent.green_id.in_(green_ids))
 
@@ -34,7 +34,7 @@ class CoffeeComponent(Base[models.CoffeeComponent]):
 
     def filter_by_origin(
         self,
-        origin_ids: list[int] | Select[tuple[models.Origin]] = [],
+        origin_ids: list[int] | Select[models.Origin] = [],
         include_suborigins: bool = False,
     ) -> Self:
 

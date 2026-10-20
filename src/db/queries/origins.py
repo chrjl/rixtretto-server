@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from sqlalchemy import select, or_, null
+from sqlalchemy import select, or_, null, Select
 from db import models
 from .base import Base
 
-from typing import TYPE_CHECKING
+from typing import cast, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from sqlalchemy import BindParameter, Select, CompoundSelect, CTE
+    from sqlalchemy import BindParameter, CompoundSelect, CTE
 
 
 def suborigin_ids_cte(origin_ids: list[int] | BindParameter | Select) -> CTE:
@@ -53,16 +53,19 @@ class Origin(Base[models.Origin]):
     def suborigin_ids(self) -> Select[tuple[int]]:
         return select(suborigin_ids_cte(origin_ids=self.select(["id"])))
 
-    def suborigins(self, cols: list[str] | None = None) -> Select[tuple[models.Origin]]:
+    def suborigins(self, cols: list[str] | None = None) -> Select[models.Origin]:
         """List of suborigin `Origin` objects, inclusive.
 
         Optional args:
             cols (list[str]): list of columns of `Origin` objects to return
         """
-        select_stmt = (
-            select(models.Origin)
-            if cols is None
-            else select(*[getattr(models.Origin, col) for col in cols])
+        select_stmt = cast(
+            Select[models.Origin],
+            (
+                select(models.Origin)
+                if cols is None
+                else select(*[getattr(models.Origin, col) for col in cols])
+            ),
         )
 
         return select_stmt.where(
@@ -73,7 +76,7 @@ class Origin(Base[models.Origin]):
 
     def green_coffees(
         self, cols: list[str] | None = None
-    ) -> Select[tuple[models.GreenCoffee]]:
+    ) -> Select[models.GreenCoffee]:
         """
         List of `GreenCoffee` objects of all of the class' origins, including
         all suborigins.
@@ -81,10 +84,13 @@ class Origin(Base[models.Origin]):
         Optional args:
             cols (list[str]): list of columns of `Origin` objects to return
         """
-        select_stmt = (
-            select(models.GreenCoffee)
-            if cols is None
-            else select(*[getattr(models.GreenCoffee, col) for col in cols])
+        select_stmt = cast(
+            Select[models.GreenCoffee],
+            (
+                select(models.GreenCoffee)
+                if cols is None
+                else select(*[getattr(models.GreenCoffee, col) for col in cols])
+            ),
         )
 
         return select_stmt.join(models.Origin).where(
@@ -93,7 +99,7 @@ class Origin(Base[models.Origin]):
 
     def roasted_coffees(
         self, cols: list[str] | None = None
-    ) -> Select[tuple[models.RoastedCoffee]]:
+    ) -> Select[models.RoastedCoffee]:
         """
         List of `RoastedCoffee` objects that have components from any of the
         class' origins, including all suborigins.
@@ -101,10 +107,13 @@ class Origin(Base[models.Origin]):
         Resolves both generic origin components (unknown specific green coffee)
         and origins of known green coffee components.
         """
-        select_stmt = (
-            select(models.RoastedCoffee)
-            if cols is None
-            else select(*[getattr(models.RoastedCoffee, col) for col in cols])
+        select_stmt = cast(
+            Select[models.RoastedCoffee],
+            (
+                select(models.RoastedCoffee)
+                if cols is None
+                else select(*[getattr(models.RoastedCoffee, col) for col in cols])
+            ),
         )
 
         return (
@@ -118,7 +127,7 @@ class Origin(Base[models.Origin]):
             )
         )
 
-    def service(self) -> Select[tuple[models.Service]]:
+    def service(self) -> Select[models.Service]:
         """
         List of `Service` that serve roasted coffees from specified origin(s),
         including all subregions.
@@ -132,7 +141,7 @@ class Origin(Base[models.Origin]):
             .where(models.RoastedCoffee.id.in_(self.roasted_coffees(["id"])))
         )
 
-    def processes(self) -> CompoundSelect[tuple[str]]:
+    def processes(self) -> CompoundSelect[str]:
         """Green coffee processing methods of cataloged coffees."""
 
         # From green coffees
@@ -148,7 +157,7 @@ class Origin(Base[models.Origin]):
 
         return green_coffee_processes.union(generic_component_processes)
 
-    def varieties(self) -> CompoundSelect[tuple[str]]:
+    def varieties(self) -> CompoundSelect[str]:
         """Varieties of cataloged coffees."""
 
         # From green coffees
@@ -168,7 +177,7 @@ class Origin(Base[models.Origin]):
 
         return green_coffee_varieties.union(generic_component_varieties)
 
-    def roasters(self) -> Select[tuple[models.Roaster]]:
+    def roasters(self) -> Select[models.Roaster]:
         """Roasters of catalogued coffees."""
         return (
             select(models.Roaster)

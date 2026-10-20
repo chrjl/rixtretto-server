@@ -14,7 +14,7 @@ class MenuItem(Base[models.MenuItem]):
     def __init__(self, *ids):
         super().__init__(models.MenuItem, *ids, pkey="normalized_name")
 
-    def filter_by_service(self, ids: list[int] | Select[tuple[models.Service]]) -> Self:
+    def filter_by_service(self, ids: list[int] | Select[models.Service]) -> Self:
         self._filters.append(models.MenuItem.service_id.in_(ids))
         return self
 

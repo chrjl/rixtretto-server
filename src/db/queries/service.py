@@ -83,8 +83,8 @@ class Service(Base[models.Service]):
 
     def locations(
         self, location_filter: LocationFilter = {}
-    ) -> Select[tuple[models.Location]]:
-        query = (
+    ) -> Select[models.Location]:
+        return (
             select(models.Location)
             .join_from(models.Location, models.ServiceLocationAssociation)
             .join_from(models.Location, models.Country)
@@ -93,8 +93,6 @@ class Service(Base[models.Service]):
                 *location_filter_clauses(location_filter),
             )
         )
-
-        return query
 
     def location_associations(self, location_filter: LocationFilter = {}):
         return (

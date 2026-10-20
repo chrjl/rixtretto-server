@@ -62,32 +62,32 @@ class GreenCoffee(Base[models.GreenCoffee]):
             models.GreenCoffeeTag.value.in_(values),
         )
 
-    def origins(self) -> Select[tuple[models.Origin]]:
+    def origins(self) -> Select[models.Origin]:
         return (
             select(models.Origin)
             .join(models.GreenCoffee)
             .where(models.GreenCoffee.id.in_(self.select(["id"])))
         )
 
-    def processes(self) -> Select[tuple[str]]:
+    def processes(self) -> Select[str]:
         return select(models.GreenCoffeeTag.value).where(
             models.GreenCoffeeTag.type == "process",
             models.GreenCoffeeTag.green_id.in_(self.select(["id"])),
         )
 
-    def varieties(self) -> Select[tuple[str]]:
+    def varieties(self) -> Select[str]:
         return select(models.GreenCoffeeTag.value).where(
             models.GreenCoffeeTag.type == "variety",
             models.GreenCoffeeTag.green_id.in_(self.select(["id"])),
         )
 
-    def tasting(self) -> Select[tuple[str]]:
+    def tasting(self) -> Select[str]:
         return select(models.GreenCoffeeTag.value).where(
             models.GreenCoffeeTag.type == "tasting",
             models.GreenCoffeeTag.green_id.in_(self.select(["id"])),
         )
 
-    def roasters(self) -> Select[tuple[models.Roaster]]:
+    def roasters(self) -> Select[models.Roaster]:
         return (
             select(models.Roaster)
             .group_by(models.Roaster.id)
@@ -97,7 +97,7 @@ class GreenCoffee(Base[models.GreenCoffee]):
             .where(models.GreenCoffee.id.in_(self.select(["id"])))
         )
 
-    def associations(self) -> Select[tuple[models.CoffeeComponent]]:
+    def associations(self) -> Select[models.CoffeeComponent]:
         return select(models.CoffeeComponent).where(
             models.CoffeeComponent.green_id.in_(self.select(["id"]))
         )
