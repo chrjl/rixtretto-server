@@ -35,7 +35,7 @@ class Country(Base[models.Country]):
         """List of suborigin `Origin` objects of a `Country`, inclusive."""
         pass
 
-    def roasters(self) -> Select[tuple[models.Roaster]]:
+    def roasters(self) -> Select[models.Roaster]:
         return (
             select(models.Roaster)
             .join_from(

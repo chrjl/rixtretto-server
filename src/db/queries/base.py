@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import select, Select
 from db import models
 from .utilities.filters import name_filter_clauses
 
-from typing import TYPE_CHECKING, TypeVar, Type, Generic, Sequence
+from typing import TYPE_CHECKING, TypeVar, Type, Generic, Sequence, cast
 
 if TYPE_CHECKING:
     from typing import Self
-    from sqlalchemy import ColumnElement, Select, Join
+    from sqlalchemy import ColumnElement, Join
     from .utilities.filters import NameFilter
 
 
@@ -33,7 +33,7 @@ class Base(Generic[T]):
     def select(
         self,
         columns: list[str] | None = None,
-    ) -> Select[tuple[T]]:
+    ) -> Select[T]:
         if columns is None:
             return (
                 select(self._model)
@@ -42,12 +42,12 @@ class Base(Generic[T]):
                 .where(*self._filters)
             )
 
-        return (
+        return cast(Select[T], (
             select(*[getattr(self._model, c) for c in columns])
             .group_by(getattr(self._model, self._pkey))
             .select_from(self._model, *self._joins)
             .where(*self._filters)
-        )
+        ))
 
     def get(self, attribute: str, cols: list[str] | None = None):
         if cols is not None:
