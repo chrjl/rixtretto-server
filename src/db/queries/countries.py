@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from sqlalchemy import select
 from db import models, queries
 from db.queries.origins import suborigin_ids_cte

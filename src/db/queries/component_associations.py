@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from sqlalchemy import select, outerjoin, or_
 from db import models
 from .base import Base

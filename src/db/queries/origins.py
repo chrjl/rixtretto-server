@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from sqlalchemy import select, or_, null, Select
 from db import models
 from .base import Base

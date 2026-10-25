@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from sqlalchemy import select, Select
 from db import models
 from .utilities.filters import name_filter_clauses

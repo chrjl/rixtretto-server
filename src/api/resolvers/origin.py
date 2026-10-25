@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from api.types import ObjectType
 from db import queries
 

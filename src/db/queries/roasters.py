@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from sqlalchemy import join, outerjoin
 
 from db import models

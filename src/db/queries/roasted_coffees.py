@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from sqlalchemy import select, delete, update, join, func, and_, or_
 from .base import Base
 from db import models

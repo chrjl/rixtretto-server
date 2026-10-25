@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from ariadne import ObjectType
+from api.types import ObjectType
 
 from typing import TYPE_CHECKING
 
