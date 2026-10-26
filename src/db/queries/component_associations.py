@@ -1,7 +1,7 @@
 from sqlalchemy import select, outerjoin, or_
 from db import models
 from .base import Base
-from .utilities import suborigins_cte
+from db.queries.subqueries import suborigins_cte
 
 from typing import TYPE_CHECKING
 

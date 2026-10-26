@@ -1,13 +1,12 @@
 from sqlalchemy import select
 from db import models, queries
-from db.queries.origins import suborigin_ids_cte
+from db.queries.subqueries import suborigins_cte
 from .base import Base
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from sqlalchemy import Select
-    from .utilities.filters import NameFilter
 
 
 class Country(Base[models.Country]):
@@ -15,9 +14,9 @@ class Country(Base[models.Country]):
         super().__init__(models.Country, *ids)
 
     def filter_by_name(
-        self, filter: NameFilter, name_column: str = "name", normalize: bool = False
+        self, name_filter, name_column: str = "name", normalize: bool = False
     ):
-        return super().filter_by_name(filter, name_column, normalize=False)
+        return super().filter_by_name(name_filter, name_column, normalize=False)
 
     def origin(self):
         """List of `Origin` objects directly corresponding to `Country`.
@@ -55,7 +54,7 @@ class Country(Base[models.Country]):
 
         return (
             queries.Origin()
-            .filter_by_pkey(select(suborigin_ids_cte(self.select(["origin_id"]))))
+            .filter_by_pkey(select(suborigins_cte(self.select(["origin_id"]))))
             .get("roasted_coffees")
         )
 
@@ -64,6 +63,6 @@ class Country(Base[models.Country]):
 
         return (
             queries.Origin()
-            .filter_by_pkey(select(suborigin_ids_cte(self.select(["origin_id"]))))
+            .filter_by_pkey(select(suborigins_cte(self.select(["origin_id"]))))
             .get("green_coffees")
         )

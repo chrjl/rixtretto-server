@@ -1,47 +1,12 @@
 from sqlalchemy import select, or_, null, Select
 from db import models
+from db.queries.subqueries import suborigins_cte
 from .base import Base
 
 from typing import cast, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from sqlalchemy import BindParameter, CompoundSelect, CTE
-
-
-def suborigin_ids_cte(origin_ids: list[int] | BindParameter | Select) -> CTE:
-    """Selectable CTE of all suborigin `origin_id`s of an origin (inclusive).
-
-    Args:
-        origin_ids (int):
-            Either a list of `id`s from the `origins` table, or a bound
-            parameter or selectable that provide it.
-
-    Returns:
-        sqlalchemy.CTE:
-            Recursive CTE that, when selected, returns a single column of `id`s
-            of the `origins` table.
-            Either a list of `id`s from the `origins` table, or a bound parameter or
-            selectable that provide it.
-    Usage:
-        (
-            select(Origin)
-            .where(
-                Origin.id.in_.select(suborigin_ids_cte(bindparam("origin_id"))
-            ),
-            {"origin_id": 1},
-        )
-
-        suborigin_list = aliased(Origin, suborigin_ids_cte(origin_id))
-        select(suborigin_list)
-    """
-    cte = (
-        select(models.Origin.id)
-        .where(models.Origin.id.in_(origin_ids))
-        .cte(recursive=True)
-    )
-    return cte.union_all(
-        select(models.Origin.id).join(cte, cte.c.id == models.Origin.parent_id)
-    )
+    from sqlalchemy import CompoundSelect, CTE
 
 
 class Origin(Base[models.Origin]):
@@ -49,7 +14,7 @@ class Origin(Base[models.Origin]):
         super().__init__(models.Origin, *ids)
 
     def suborigin_ids(self) -> Select[tuple[int]]:
-        return select(suborigin_ids_cte(origin_ids=self.select(["id"])))
+        return select(suborigins_cte(origin_ids=self.select(["id"])))
 
     def suborigins(self, cols: list[str] | None = None) -> Select[models.Origin]:
         """List of suborigin `Origin` objects, inclusive.
@@ -68,7 +33,7 @@ class Origin(Base[models.Origin]):
 
         return select_stmt.where(
             models.Origin.id.in_(
-                select(suborigin_ids_cte(origin_ids=self.select(["id"])))
+                select(suborigins_cte(origin_ids=self.select(["id"])))
             )
         )
 

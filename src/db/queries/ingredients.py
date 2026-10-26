@@ -2,7 +2,6 @@ from sqlalchemy import select
 
 from db import models
 from .base import Base
-from .utilities.filters import NameFilter
 
 
 class Ingredient(Base[models.Ingredient]):

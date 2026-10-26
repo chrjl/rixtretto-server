@@ -1,13 +1,12 @@
 from sqlalchemy import select, Select
 from db import models
-from .utilities.filters import name_filter_clauses
+from db.queries.filters import NameFilter, name_filter_clauses
 
 from typing import TYPE_CHECKING, TypeVar, Type, Generic, Sequence, cast
 
 if TYPE_CHECKING:
     from typing import Self
     from sqlalchemy import ColumnElement, Join
-    from .utilities.filters import NameFilter
 
 
 T = TypeVar("T", bound=models.Base)
@@ -40,12 +39,15 @@ class Base(Generic[T]):
                 .where(*self._filters)
             )
 
-        return cast(Select[T], (
-            select(*[getattr(self._model, c) for c in columns])
-            .group_by(getattr(self._model, self._pkey))
-            .select_from(self._model, *self._joins)
-            .where(*self._filters)
-        ))
+        return cast(
+            Select[T],
+            (
+                select(*[getattr(self._model, c) for c in columns])
+                .group_by(getattr(self._model, self._pkey))
+                .select_from(self._model, *self._joins)
+                .where(*self._filters)
+            ),
+        )
 
     def get(self, attribute: str, cols: list[str] | None = None):
         if cols is not None:
@@ -64,14 +66,14 @@ class Base(Generic[T]):
 
     def filter_by_name(
         self,
-        filter: NameFilter,
+        name_filter,
         name_column: str = "normalized_name",
         normalize: bool = True,
     ) -> Self:
         self._filters.extend(
             name_filter_clauses(
-                filter,
                 model=self._model,
+                name_filter=NameFilter(**name_filter),
                 name_column=name_column,
                 normalize=normalize,
             )
