@@ -89,7 +89,7 @@ def sample_service_objects(engine):
         if roaster_name := sample_service_roaster_associations.get(service_name):
             query = (
                 queries.Roaster()
-                .filter_by_name(filter={"contains": roaster_name})
+                .filter_by_name({"contains": roaster_name})
                 .select(["id"])
             )
 
