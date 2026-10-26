@@ -59,7 +59,7 @@ class TestCountryFilters:
 
     def test_filter_by_name(self, engine):
         with Session(engine) as session:
-            query = queries.Country().filter_by_name(filter={"starts_with": "bo"})
+            query = queries.Country().filter_by_name({"starts_with": "bo"})
             result = session.scalars(query.select()).all()
 
             assert len(result) == 4
@@ -88,7 +88,7 @@ class TestCountryFilters:
             query = (
                 queries.Country()
                 .filter_by_pkey(ids=["BA", "BO", "BR"])
-                .filter_by_name(filter={"contains": "ia"})
+                .filter_by_name({"contains": "ia"})
             )
 
             result = session.scalars(query.select()).all()
@@ -217,7 +217,7 @@ class TestOriginFilters:
 
     def test_filter_by_name(self, engine):
         with Session(engine) as session:
-            query = queries.Origin().filter_by_name(filter={"starts_with": "bo"})
+            query = queries.Origin().filter_by_name({"starts_with": "bo"})
             result = session.scalars(query.select()).all()
 
             assert len(result) == 3
@@ -236,7 +236,7 @@ class TestOriginFilters:
             query = (
                 queries.Origin()
                 .filter_by_pkey(ids=[1, 2, 3])
-                .filter_by_name(filter={"contains": "ia"})
+                .filter_by_name({"contains": "ia"})
             )
 
             result = session.scalars(query.select()).all()

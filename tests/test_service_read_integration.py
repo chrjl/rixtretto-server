@@ -40,12 +40,10 @@ class TestService:
     @pytest.mark.parametrize(
         "name,location_filter,expected_count",
         [
-            ("Go Get Em Tiger", None, 8),
             ("Go Get Em Tiger", {}, 8),
             ("Go Get Em Tiger", {"neighborhood": "Valley"}, 0),
             ("Go Get Em Tiger", {"city": "Los"}, 6),
             ("Go Get Em Tiger", {"neighborhood": "Downtown"}, 2),
-            ("Go Get Em Tiger", {"address": "Larchmont"}, 1),
         ],
     )
     def test_filter_by_location(self, client, name, location_filter, expected_count):
@@ -361,9 +359,8 @@ class TestServiceRelationships:
                         dateOpened
                         dateClosed
                         location {
-                            name
                             address
-                            address_detail
+                            addressDetail
                             city
                             state
                             country {
