@@ -1,5 +1,5 @@
 import json
-import pydantic
+import pydantic, pydantic.alias_generators
 import ariadne
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError
 from typing import Callable
@@ -7,7 +7,12 @@ from graphql import GraphQLError
 
 
 class BaseModel(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(extra="forbid")
+    model_config = pydantic.ConfigDict(
+        extra="forbid",
+        alias_generator=pydantic.alias_generators.to_camel,
+        validate_by_name=True,
+        validate_by_alias=True,
+    )
 
 
 def handle_validation_errors(f):
