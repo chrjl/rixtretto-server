@@ -398,6 +398,45 @@ class TestOriginQueries:
 
 
 @pytest.mark.use_sample_data(True)
+class TestRoasterFilters:
+    @pytest.mark.parametrize(
+        "name_filter, expected_names",
+        [
+            ({"starts_with": "c"}, ["Christopher L", "Community Coffee"]),
+            (
+                {"contains": "coffee"},
+                ["Community Coffee", "Lumen Coffee", "Rhino Coffee"],
+            ),
+        ],
+    )
+    def test_name_filter(self, engine, name_filter, expected_names):
+        with Session(engine) as session:
+            query = queries.Roaster().filter_by_name(name_filter).select(["name"])
+            result = session.scalars(query).all()
+
+            assert len(result) == len(expected_names)
+            assert set(result) == set(expected_names)
+
+    @pytest.mark.parametrize(
+        "location_filter, expected_names",
+        [
+            ({"city": "los angeles"}, ["Christopher L", "Go Get Em Tiger"]),
+            ({"state": "ca"}, ["Christopher L", "Go Get Em Tiger", "Lumen Coffee"]),
+            ({"country_id": "CA"}, ["Modus"]),
+        ],
+    )
+    def test_location_filter(self, engine, location_filter, expected_names):
+        with Session(engine) as session:
+            query = (
+                queries.Roaster().filter_by_location(location_filter).select(["name"])
+            )
+            result = session.scalars(query).all()
+
+            assert len(result) == len(expected_names)
+            assert set(result) == set(expected_names)
+
+
+@pytest.mark.use_sample_data(True)
 class TestGreenCoffeeFilters:
     model = models.GreenCoffee
 
