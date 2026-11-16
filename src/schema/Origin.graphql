@@ -17,8 +17,8 @@ type Origin {
   name: String!
   processes: [String]!
   varieties: [String]!
-  harvest_start: Int
-  harvest_end: Int
+  harvestStart: Int
+  harvestEnd: Int
   details: JSON
 
   parent: Origin

@@ -29,6 +29,12 @@ type CoffeeServiceLocation {
   dateClosed: String
 }
 
+type CoffeeServiceLocationMutationResult implements MutationResult {
+  status: Boolean!
+  error: Error
+  service: CoffeeService
+}
+
 type MenuItem {
   name: String
   service: CoffeeService!

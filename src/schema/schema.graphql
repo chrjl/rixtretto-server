@@ -81,7 +81,6 @@ input LocationFilter {
   neighborhood: String
   city: String
   state: String
-  countryName: String
   countryId: ID
 }
 
@@ -112,26 +111,22 @@ input LocationInput {
 }
 
 input NameFilter {
-  starts_with: String
+  startsWith: String
   contains: String
 }
 
-input CoffeeFilter {
+input Filter {
+  # CoffeeFilter
+  
   profiles: [String!]
   varieties: [String!]
   processes: [String!]
   tasting: [String!]
 }
 
-input Filter {
+extend input Filter {
   name: NameFilter
   location: LocationFilter
-
-  # ...CoffeeFilter
-  profiles: [String!]
-  varieties: [String!]
-  processes: [String!]
-  tasting: [String!]
 
   menu: NameFilter
 }
