@@ -11,8 +11,8 @@ class TestOriginColumns:
             name
             processes
             varieties
-            harvest_start
-            harvest_end
+            harvestStart
+            harvestEnd
             details
         }
     }
@@ -26,7 +26,7 @@ class TestOriginColumns:
         assert len(result) == 214
 
     def test_filter_by_name(self, client):
-        filter = {"name": {"starts_with": "Hawaii"}}
+        filter = {"name": {"startsWith": "Hawaii"}}
         variables = {"filter": filter}
 
         response = client.post("/", json={"query": self.query, "variables": variables})
@@ -62,7 +62,7 @@ class TestOriginSelfRelationships:
         }
         """
 
-        variables = {"filter": {"name": {"starts_with": "hawaii"}}}
+        variables = {"filter": {"name": {"startsWith": "hawaii"}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -80,7 +80,7 @@ class TestOriginSelfRelationships:
         }
         """
 
-        variables = {"filter": {"name": {"starts_with": "hawaii"}}}
+        variables = {"filter": {"name": {"startsWith": "hawaii"}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -108,7 +108,7 @@ class TestOriginSelfRelationships:
         }
         """
 
-        variables = {"filter": {"name": {"starts_with": origin_name}}}
+        variables = {"filter": {"name": {"startsWith": origin_name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -138,7 +138,7 @@ class TestOriginRelationships:
         }
         """
 
-        variables = {"filter": {"name": {"starts_with": origin_name}}}
+        variables = {"filter": {"name": {"startsWith": origin_name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 

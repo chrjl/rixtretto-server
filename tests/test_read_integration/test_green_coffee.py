@@ -71,7 +71,7 @@ class TestGreenCoffeeFilters:
             "/",
             json={
                 "query": self.query,
-                "variables": {"filter": {"name": {"starts_with": name}}},
+                "variables": {"filter": {"name": {"startsWith": name}}},
             },
         )
 
@@ -201,7 +201,7 @@ class TestGreenCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -222,7 +222,7 @@ class TestGreenCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -248,7 +248,7 @@ class TestGreenCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -277,7 +277,7 @@ class TestGreenCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -305,7 +305,7 @@ class TestGreenCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -336,7 +336,7 @@ class TestGreenCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 

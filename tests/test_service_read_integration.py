@@ -70,7 +70,7 @@ class TestService:
 
         variables = {
             "filter": {
-                "name": {"starts_with": name},
+                "name": {"startsWith": name},
                 "location": location_filter,
             }
         }
@@ -90,7 +90,7 @@ class TestServiceRelationships:
     @pytest.mark.parametrize(
         "name_filter, expected_count",
         [
-            ({"starts_with": "C"}, 1),
+            ({"startsWith": "C"}, 1),
             ({"contains": "e"}, 2),
         ],
     )
@@ -135,7 +135,7 @@ class TestServiceRelationships:
             }
         """
 
-        variables = {"name": {"starts_with": name}}
+        variables = {"name": {"startsWith": name}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["coffeeService"][0]["coffees"]
@@ -164,7 +164,7 @@ class TestServiceRelationships:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": roasted_coffee_name}}}
+        variables = {"filter": {"name": {"startsWith": roasted_coffee_name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["roastedCoffees"][0]
@@ -197,7 +197,7 @@ class TestServiceRelationships:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": service_name}}}
+        variables = {"filter": {"name": {"startsWith": service_name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["coffeeService"][0]["origins"]
@@ -225,7 +225,7 @@ class TestServiceRelationships:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": origin_name}}}
+        variables = {"filter": {"name": {"startsWith": origin_name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = [
@@ -252,7 +252,7 @@ class TestServiceRelationships:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": service_name}}}
+        variables = {"filter": {"name": {"startsWith": service_name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["coffeeService"][0]["processes"]
@@ -308,7 +308,7 @@ class TestServiceRelationships:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": service_name}}}
+        variables = {"filter": {"name": {"startsWith": service_name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["coffeeService"][0]["varieties"]
@@ -399,7 +399,7 @@ class TestServiceRelationships:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": service_name}}}
+        variables = {"filter": {"name": {"startsWith": service_name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -442,8 +442,8 @@ class TestMenuItem:
                 {"contains": "latte"},
                 ["Almond Macadamia Latte", "Iced Honey Matcha Latte", "Latte"],
             ),
-            ({"starts_with": "lache"}, ["Lâche Pas"]),
-            ({"starts_with": "t"}, ["Tumi", "The Janet", "The Renee"]),
+            ({"startsWith": "lache"}, ["Lâche Pas"]),
+            ({"startsWith": "t"}, ["Tumi", "The Janet", "The Renee"]),
         ],
     )
     def test_filter_by_name(self, client, name_filter, expected_result):
@@ -499,8 +499,8 @@ class TestMenuItem:
 
         variables = {
             "filter": {
-                "name": {"starts_with": service_name},
-                "menu": {"starts_with": menu_item_name},
+                "name": {"startsWith": service_name},
+                "menu": {"startsWith": menu_item_name},
             }
         }
 
@@ -542,7 +542,7 @@ class TestIngredient:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": search}}}
+        variables = {"filter": {"name": {"startsWith": search}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["ingredients"][0]
@@ -568,7 +568,7 @@ class TestIngredient:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["ingredients"][0]
@@ -596,7 +596,7 @@ class TestIngredient:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["ingredients"][0]
@@ -625,7 +625,7 @@ class TestIngredient:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["ingredients"][0]
@@ -654,7 +654,7 @@ class TestIngredient:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["ingredients"][0]
@@ -703,7 +703,7 @@ class TestIngredient:
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["ingredients"][0]

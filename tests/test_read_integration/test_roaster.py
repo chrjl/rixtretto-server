@@ -50,8 +50,8 @@ class TestRoasterColumns:
     @pytest.mark.parametrize(
         "filter,name",
         [
-            ({"name": {"starts_with": "C"}}, "Christopher L"),
-            ({"name": {"starts_with": "G"}}, "Go Get Em Tiger"),
+            ({"name": {"startsWith": "C"}}, "Christopher L"),
+            ({"name": {"startsWith": "G"}}, "Go Get Em Tiger"),
         ],
     )
     def test_filter_by_name(self, client, filter, name):

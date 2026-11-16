@@ -28,7 +28,7 @@ def test_components_of_roasted_coffee(client, name, components):
         }
     }
     """
-    variables = {"filter": {"name": {"starts_with": name}}}
+    variables = {"filter": {"name": {"startsWith": name}}}
 
     response = client.post("/", json={"query": query, "variables": variables})
 
@@ -76,7 +76,7 @@ def test_associations_of_green_coffee(client, name, roasted_coffee_names):
         }
     }
     """
-    variables = {"filter": {"name": {"starts_with": name}}}
+    variables = {"filter": {"name": {"startsWith": name}}}
 
     response = client.post("/", json={"query": query, "variables": variables})
 

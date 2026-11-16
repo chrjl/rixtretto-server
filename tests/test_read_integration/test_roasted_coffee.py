@@ -49,7 +49,7 @@ class TestRoastedCoffeeFilters:
             "/",
             json={
                 "query": self.query,
-                "variables": {"filter": {"name": {"starts_with": name}}},
+                "variables": {"filter": {"name": {"startsWith": name}}},
             },
         )
 
@@ -190,7 +190,7 @@ class TestRoastedCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -217,7 +217,7 @@ class TestRoastedCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -241,7 +241,7 @@ class TestRoastedCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -264,7 +264,7 @@ class TestRoastedCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -291,7 +291,7 @@ class TestRoastedCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 
@@ -318,7 +318,7 @@ class TestRoastedCoffeeRelationships:
             }
         }
         """
-        variables = {"filter": {"name": {"starts_with": name}}}
+        variables = {"filter": {"name": {"startsWith": name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
 

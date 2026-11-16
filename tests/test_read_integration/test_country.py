@@ -64,10 +64,10 @@ class TestCountryColumns:
     @pytest.mark.parametrize(
         "filter,count",
         [
-            ({"name": {"starts_with": "Bo"}}, 4),
-            ({"name": {"starts_with": "bO"}}, 4),
+            ({"name": {"startsWith": "Bo"}}, 4),
+            ({"name": {"startsWith": "bO"}}, 4),
             ({"name": {"contains": "ia"}}, 48),
-            ({"name": {"starts_with": "bo", "contains": "ia"}}, 2),
+            ({"name": {"startsWith": "bo", "contains": "ia"}}, 2),
         ],
     )
     def test_filter_by_name(self, client, filter, count):
@@ -89,7 +89,7 @@ class TestCountryColumns:
         [
             (
                 ["BO", "BR"],
-                {"name": {"starts_with": "B"}},
+                {"name": {"startsWith": "B"}},
                 [
                     {
                         "id": "BO",
@@ -131,7 +131,7 @@ class TestCountryRelationships:
                 }
             }
 
-            origins(filter: {name: {starts_with: $origin_name}}) {
+            origins(filter: {name: {startsWith: $origin_name}}) {
                 name
             }
         }

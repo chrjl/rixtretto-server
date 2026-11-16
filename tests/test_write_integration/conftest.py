@@ -87,7 +87,7 @@ def origin_id(client):
             }
         """
 
-        variables = {"filter": {"name": {"starts_with": origin_name}}}
+        variables = {"filter": {"name": {"startsWith": origin_name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         result = response.json()["data"]["origins"]
@@ -192,7 +192,7 @@ def roaster_id(client):
         }
         """
 
-        variables = {"filter": {"name": {"starts_with": roaster_name}}}
+        variables = {"filter": {"name": {"startsWith": roaster_name}}}
 
         response = client.post("/", json={"query": query, "variables": variables})
         assert response.status_code == 200
