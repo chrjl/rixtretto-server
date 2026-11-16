@@ -1,5 +1,5 @@
 from api.types import ObjectType
-from db.queries.utilities.filters import Filter, LocationFilter, NameFilter
+from db.queries.filters import Filter, LocationFilter, NameFilter
 from db import models, queries
 
 coffee_service = ObjectType("CoffeeService")
@@ -27,8 +27,8 @@ def resolve_roaster(service: models.Service, info):
 def resolve_locations(service: models.Service, info: GraphQLResolveInfo):
     Session = info.context["Session"]
 
-    filter: Filter = info.context.get("_filter", {})
-    location_filter: LocationFilter = filter.get("location", {})
+    filter = info.context.get("_filter", {})
+    location_filter = filter.get("location", {})
     query = queries.Service(service.id).location_associations(location_filter)
 
     with Session() as session:
@@ -61,8 +61,8 @@ def resolve_locations(service: models.Service, info: GraphQLResolveInfo):
 @coffee_service.field("menu")
 def resolve_menu_items(service: models.Service, info: GraphQLResolveInfo):
     Session = info.context["Session"]
-    filter: Filter = info.context.get("_filter", {})
-    menu_filter: NameFilter = filter.get("menu", {})
+    filter = info.context.get("_filter", {})
+    menu_filter = filter.get("menu", {})
 
     with Session() as session:
         if menu_filter:
