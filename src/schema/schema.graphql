@@ -52,6 +52,12 @@ type Mutation {
     id: ID!
     input: CoffeeComponentInput!
   ): RoastedCoffeeMutationResult!
+
+  coffeeServiceCreate(input: CoffeeServiceInput!): CoffeeServiceMutationResult!
+  coffeeServiceUpdate(
+    id: ID!
+    input: CoffeeServiceInput!
+  ): CoffeeServiceMutationResult!
 }
 
 type Error {

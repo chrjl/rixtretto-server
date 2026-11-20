@@ -29,6 +29,22 @@ type CoffeeServiceLocation {
   dateClosed: String
 }
 
+input CoffeeServiceInput {
+  name: String
+
+  "TODO!"
+  coffeeIds: [ID!]
+
+  "TODO!"
+  locationIds: [ID!]
+}
+
+type CoffeeServiceMutationResult implements MutationResult {
+  status: Boolean!
+  error: Error
+  service: CoffeeService
+}
+
 type CoffeeServiceLocationMutationResult implements MutationResult {
   status: Boolean!
   error: Error
