@@ -12,7 +12,7 @@ from .roasted_coffee import (
     coffee_component_input_type,
 )
 from .coffee_component import component_association
-from .coffee_service import coffee_service
+from .coffee_service import coffee_service, coffee_service_input_type
 from .menu_item import menu_item
 from .ingredient import ingredient
 
@@ -37,4 +37,5 @@ input_types = [
     coffee_tag_input_type,
     roasted_coffee_input_type,
     coffee_component_input_type,
+    coffee_service_input_type,
 ]

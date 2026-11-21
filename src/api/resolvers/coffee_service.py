@@ -1,6 +1,8 @@
-from api.types import ObjectType
+from pydantic import MISSING
+from api.types import BaseModel, ObjectType, InputType
 from db.queries.filters import Filter, LocationFilter, NameFilter
 from db import models, queries
+from .mutation import mutation_type
 
 coffee_service = ObjectType("CoffeeService")
 
@@ -132,3 +134,56 @@ def resolve_varieties(service: models.Service, info: GraphQLResolveInfo) -> list
                 *[coffee.id for coffee in service.roasted_coffees]
             ).get("varieties")
         ).all()
+
+
+class CoffeeServiceInput(BaseModel):
+    name: str | MISSING = MISSING
+    coffee_ids: list[int] | MISSING = MISSING
+    location_ids: list[int] | MISSING = MISSING
+
+
+coffee_service_input_type = InputType(
+    "CoffeeServiceInput", lambda data: CoffeeServiceInput(**data)
+)
+
+
+@mutation_type.field("coffeeServiceCreate")
+def resolve_coffee_service_create(
+    _, info: GraphQLResolveInfo, input: CoffeeServiceInput
+):
+    Session = info.context["Session"]
+
+    name = input.name
+    # coffee_ids = input.coffee_ids
+    # location_ids = input.location_ids
+
+    if name is MISSING:
+        raise ValueError("Missing required field `name`")
+
+    service = models.Service(name=name)
+
+    with Session() as session:
+        session.add(service)
+        session.commit()
+
+        session.refresh(service)
+
+    return {"status": True, "service": service}
+
+
+@mutation_type.field("coffeeServiceUpdate")
+def resolve_coffee_service_update(
+    _, info: GraphQLResolveInfo, id: int, input: CoffeeServiceInput
+):
+    Session = info.context["Session"]
+
+    with Session() as session:
+        service = session.get(models.Service, id)
+
+        for key, value in input.model_dump().items():
+            setattr(service, key, value)
+
+        session.commit()
+        session.refresh(service)
+
+    return {"status": True, "service": service}
