@@ -20,3 +20,4 @@ from .service import (
     Ingredient,
     MenuItemIngredientAssociation,
 )
+from .identities import Identity
