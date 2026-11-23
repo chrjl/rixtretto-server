@@ -71,6 +71,8 @@ def upgrade() -> None:
 
     # Create and seed new origins table
     op.rename_table("origins", "origins_previous")
+    op.drop_constraint("fk_green_coffees_region_id_origins", "green_coffees")
+    op.drop_constraint("pk_origins", "origins_previous")
 
     origins_table = op.create_table(
         "origins",
@@ -164,16 +166,14 @@ def upgrade() -> None:
     # Refactor green_coffees × roasted_coffee_components
     # Refactor anonymous green coffees into origin_id × process in components table
     # Remove anonymous green coffees from green_coffees table
-    op.drop_constraint("roasted_coffee_components_pkey", "roasted_coffee_components")
+    op.drop_constraint("pk_roasted_coffee_components", "roasted_coffee_components")
     op.add_column(
         "roasted_coffee_components",
         sa.Column(
             "id", sa.Integer, primary_key=True, autoincrement=True, nullable=False
         ),
     )
-    op.create_primary_key(
-        "roasted_coffee_components_pkey", "roasted_coffee_components", ["id"]
-    )
+    op.create_primary_key(None, "roasted_coffee_components", ["id"])
     op.add_column(
         "roasted_coffee_components",
         sa.Column("origin_id", sa.Integer, sa.ForeignKey("origins.id"), nullable=True),
@@ -194,7 +194,7 @@ def upgrade() -> None:
         "roasted_coffee_components", "green_id", existing_nullable=False, nullable=True
     )
     op.create_check_constraint(
-        "ck_component_or_origin",
+        op.f("ck_component_or_origin"),
         "roasted_coffee_components",
         ~(
             sa.and_(
@@ -225,9 +225,7 @@ def upgrade() -> None:
         "green_coffees", "origin_id", existing_nullable=True, nullable=False
     )
 
-    op.alter_column(
-        "green_coffees", "name", existing_nullable=True, nullable=False
-    )
+    op.alter_column("green_coffees", "name", existing_nullable=True, nullable=False)
 
     # Drop previous origins table
     op.drop_column("green_coffees", "region_id")
@@ -235,6 +233,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Downgrade schema."""
+    connection = op.get_bind()
+
     green_coffees_table = sql.table(
         "green_coffees",
         sql.column("id", sa.Integer),
@@ -250,59 +251,59 @@ def downgrade() -> None:
         sql.column("origin_id", sa.Integer),
         sql.column("process", sa.String),
     )
-    prev_origins_table = sql.table(
-        "origins_previous",
-        sql.column("id", sa.Integer),
-        sql.column("country", sa.String(2)),
-        sql.column("region", sa.String),
-    )
-    origins_table = sql.table(
-        "origins",
-        sa.Column("id", sa.Integer),
-        sa.Column("parent_id", sa.Integer),
-        sa.Column("name", sa.String),
-        sa.Column("country_id", sa.String),
-    )
     countries_table = sql.table(
         "countries",
         sa.Column("id", sa.String, nullable=False),
         sa.Column("name", sa.String, nullable=False),
     )
 
-    connection = op.get_bind()
+    op.rename_table("origins", "ug_origins")
+    ug_origins_table = sql.table(
+        "ug_origins",
+        sa.Column("id", sa.Integer),
+        sa.Column("parent_id", sa.Integer),
+        sa.Column("name", sa.String),
+        sa.Column("country_id", sa.String),
+    )
 
-    """Downgrade schema."""
-    # Re-create and populate old origins table
-    prev_origins_table = op.create_table(
-        "origins_previous",
+    # Re-create and populate downgraded origins table
+    op.drop_constraint("fk_origins_parent_id_origins", "ug_origins")
+    op.drop_constraint("fk_green_coffees_origin_id_origins", "green_coffees")
+    op.drop_constraint(
+        "fk_roasted_coffee_components_origin_id_origins", "roasted_coffee_components"
+    )
+    op.drop_constraint("pk_origins", "ug_origins")
+
+    dg_origins_table = op.create_table(
+        "origins",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("country", sa.String(2)),
         sa.Column("region", sa.String),
     )
 
-    op.alter_column(
-        "green_coffees", "name", existing_nullable=False, nullable=True
-    )
+    op.alter_column("green_coffees", "name", existing_nullable=False, nullable=True)
 
     connection.execute(
-        sa.insert(prev_origins_table).from_select(
+        sa.insert(dg_origins_table).from_select(
             ["country", "region"],
             sa.union(
-                sa.select(origins_table.c.country_id, origins_table.c.name)
+                sa.select(ug_origins_table.c.country_id, ug_origins_table.c.name)
                 .select_from(green_coffees_table)
                 .join(
-                    origins_table, origins_table.c.id == green_coffees_table.c.origin_id
+                    ug_origins_table,
+                    ug_origins_table.c.id == green_coffees_table.c.origin_id,
                 ),
                 sa.select(
-                    origins_table.c.country_id,
+                    ug_origins_table.c.country_id,
                     sa.case(
-                        (origins_table.c.parent_id != None, origins_table.c.name),
+                        (ug_origins_table.c.parent_id != None, ug_origins_table.c.name),
                         else_=None,
                     ),
                 )
                 .select_from(components_table)
                 .join(
-                    origins_table, origins_table.c.id == components_table.c.origin_id
+                    ug_origins_table,
+                    ug_origins_table.c.id == components_table.c.origin_id,
                 ),
             ),
         )
@@ -311,7 +312,11 @@ def downgrade() -> None:
     op.add_column("green_coffees", sa.Column("region_id", sa.Integer))
 
     # Undo refactoring of anonymous (region-generic) green coffees
-    op.drop_constraint("ck_component_or_origin", "roasted_coffee_components")
+    # op.drop_constraint("ck_component_or_origin", "roasted_coffee_components")
+    op.drop_constraint(
+        "ck_roasted_coffee_components_`ck_component_or_origin`",
+        "roasted_coffee_components",
+    )
 
     connection.execute(
         sa.insert(green_coffees_table).from_select(
@@ -324,28 +329,28 @@ def downgrade() -> None:
 
     country_name_subq = (
         sa.select(countries_table.c.name)
-        .where(countries_table.c.id == origins_table.c.country_id)
+        .where(countries_table.c.id == ug_origins_table.c.country_id)
         .scalar_subquery()
     )
 
     region_id_subq = (
-        sa.select(prev_origins_table.c.id)
-        .select_from(prev_origins_table)
+        sa.select(dg_origins_table.c.id)
+        .select_from(dg_origins_table)
         .join(
-            origins_table,
+            ug_origins_table,
             sa.and_(
-                origins_table.c.country_id == prev_origins_table.c.country,
-                sa.func.lower(origins_table.c.name)
+                ug_origins_table.c.country_id == dg_origins_table.c.country,
+                sa.func.lower(ug_origins_table.c.name)
                 == sa.case(
                     (
-                        prev_origins_table.c.region == None,
+                        dg_origins_table.c.region == None,
                         sa.func.lower(country_name_subq),
                     ),
-                    else_=sa.func.lower(prev_origins_table.c.region),
+                    else_=sa.func.lower(dg_origins_table.c.region),
                 ),
             ),
         )
-        .where(origins_table.c.id == green_coffees_table.c.origin_id)
+        .where(ug_origins_table.c.id == green_coffees_table.c.origin_id)
     ).scalar_subquery()
 
     connection.execute(
@@ -369,7 +374,7 @@ def downgrade() -> None:
     op.drop_column("roasted_coffee_components", "origin_id")
     op.drop_column("roasted_coffee_components", "details")
     op.create_primary_key(
-        "roasted_coffee_components_pkey",
+        None,
         "roasted_coffee_components",
         ["roasted_id", "green_id"],
     )
@@ -377,13 +382,16 @@ def downgrade() -> None:
     # Remove the new origin model from green_coffees
     op.drop_column("green_coffees", "origin_id")
     op.create_foreign_key(
-        None, "green_coffees", "origins_previous", ["region_id"], ["id"]
+        "fk_green_coffees_region_id_origins",
+        "green_coffees",
+        "origins",
+        ["region_id"],
+        ["id"],
     )
     op.alter_column(
         "green_coffees", "region_id", existing_nullable=True, nullable=False
     )
 
     # Drop tables
-    op.drop_table("origins")
-    op.rename_table("origins_previous", "origins")
+    op.drop_table("ug_origins")
     op.drop_table("countries")

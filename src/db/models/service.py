@@ -21,9 +21,6 @@ class Service(BaseWithNormalizedName):
     Required attributes:
         name(str)
 
-    Optional attributes:
-        roaster_id(int): if the retailer exclusively sells a single roaster
-
     Relationships:
         roaster(Roaster)
         locations(list[Location])
@@ -34,11 +31,6 @@ class Service(BaseWithNormalizedName):
     __tablename__ = "service"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    roaster_id: Mapped[int] = mapped_column(
-        ForeignKey("roasters.id"),
-        nullable=True,
-        comment="If service has an established relationship with a roaster.",
-    )
 
     locations: Mapped[list["Location"]] = relationship(
         secondary="service_location_associations", viewonly=True
@@ -46,7 +38,6 @@ class Service(BaseWithNormalizedName):
     location_associations: Mapped[list["ServiceLocationAssociation"]] = relationship(
         back_populates="service"
     )
-    roaster: Mapped["Roaster | None"] = relationship()
     menu_items: Mapped[list["MenuItem"]] = relationship(back_populates="service")
     coffee_associations: Mapped[list["ServiceCoffeeAssociation"]] = relationship(
         back_populates="service"
@@ -129,9 +120,11 @@ class ServiceLocationAssociation(Base):
 
     __tablename__ = "service_location_associations"
 
-    service_id: Mapped[int] = mapped_column(ForeignKey("service.id"), primary_key=True)
+    service_id: Mapped[int] = mapped_column(
+        ForeignKey("service.id"), primary_key=True, onupdate="CASCADE"
+    )
     location_id: Mapped[int] = mapped_column(
-        ForeignKey("locations.id"), primary_key=True
+        ForeignKey("locations.id"), primary_key=True, onupdate="CASCADE"
     )
     address_detail: Mapped[str | None]
     neighborhood: Mapped[str | None]
@@ -184,8 +177,12 @@ class ServiceCoffeeAssociation(Base):
     __tablename__ = "service_coffee_associations"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    service_id: Mapped[int] = mapped_column(ForeignKey("service.id"))
-    roasted_coffee_id: Mapped[int] = mapped_column(ForeignKey("roasted_coffees.id"))
+    service_id: Mapped[int] = mapped_column(
+        ForeignKey("service.id"), onupdate="CASCADE"
+    )
+    roasted_coffee_id: Mapped[int] = mapped_column(
+        ForeignKey("roasted_coffees.id"), onupdate="CASCADE"
+    )
 
     description: Mapped[str | None] = mapped_column(
         comment="e.g. coffeeshop, popup, restaurant"
@@ -238,6 +235,7 @@ class MenuItem(BaseWithNormalizedName):
 
     service_id: Mapped[int] = mapped_column(
         ForeignKey("service.id"),
+        onupdate="CASCADE",
         comment="for specialty drinks limited to specific retailer",
     )
 
@@ -286,6 +284,7 @@ class MenuItemVariant(Base):
         ForeignKeyConstraint(
             ["service_id", "menu_item_pkey"],
             ["menu_items.service_id", "menu_items.normalized_name"],
+            onupdate="CASCADE",
         ),
     )
 

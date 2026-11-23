@@ -24,7 +24,6 @@ class Roaster(BaseWithNormalizedName):
 
     Optional attributes:
         city(str)
-        state(str)
         equipment_brand(str)
         equipment_model(str)
         equipment_capacity(float): in kg
@@ -72,7 +71,6 @@ class Roaster(BaseWithNormalizedName):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     city: Mapped[str | None]
-    state: Mapped[str | None]
     country: Mapped[str] = mapped_column(
         ForeignKey("countries.id")
     )
