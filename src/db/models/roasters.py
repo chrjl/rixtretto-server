@@ -1,67 +1,28 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
-
 from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.ext.hybrid import hybrid_property
 
-from .base import BaseWithNormalizedName
+from .base import Base
 from .utilities import representation
 
+from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
+    from .identities import Location
     from .coffees import RoastedCoffee
 
 
-class Roaster(BaseWithNormalizedName):
+class Roaster(Base):
     """Objects from the `roasters` table.
 
     Required attributes:
+        id: PK, FK (identities.id)
         name(str): name of the roaster
-        country(str): 2-letter country code
 
     Relationships:
+        identity(Identity)
+        locations(list[Location]): via association
         coffees(list[RoastedCoffee])
 
-    Optional attributes:
-        city(str)
-        equipment_brand(str)
-        equipment_model(str)
-        equipment_capacity(float): in kg
-
-    JSON attributes:
-        details: additional contact details (see contact.schema.json)
-
-            {
-                "website": "https://gget.com",
-                "profiles": [
-                    {
-                        "network": "facebook",
-                        "handle": "ggetla",
-                        "url": "https://facebook.com/ggetla"
-                    }
-                ],
-                "locations": [
-                    {
-                        "name": "Grand Central Market",
-                        "type": "coffeebar",
-                        "address": "317 S Broadway",
-                        "city": "Los Angeles",
-                        "state": "CA",
-                        "zipcode": 90013
-                    }
-                ],
-                "contacts": [
-                    {
-                        "name": "John Doe",
-                        "title": "Head roaster",
-                        "location": "Roastery",
-                        "address": "123 Unknown",
-                        "city": "Los Angeles",
-                        "state": "CA",
-                        "zipcode": 99999
-                    }
-                ]
-            }
     """
 
     __tablename__ = "roasters"
@@ -69,22 +30,14 @@ class Roaster(BaseWithNormalizedName):
         "comment": "Identity information of companies, people, or users that roast coffees."
     }
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    city: Mapped[str | None]
-    country: Mapped[str] = mapped_column(
-        ForeignKey("countries.id")
-    )
-    details: Mapped[dict] = mapped_column(
-        nullable=True,
-        server_default="{}",
-        comment="Can include contact information, website, socials profiles, location details, etc.",
-    )
+    id: Mapped[int] = mapped_column(ForeignKey("identities.id"), primary_key=True)
     equipment_brand: Mapped[str | None]
     equipment_model: Mapped[str | None]
     equipment_capacity: Mapped[float | None] = mapped_column(
         comment="Size of the roasting machine in kg."
     )
 
+    locations: Mapped[list[Location]] = relationship(secondary="identities")
     coffees: Mapped[list["RoastedCoffee"]] = relationship(back_populates="roaster")
 
     def __repr__(self):

@@ -1,6 +1,3 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
-
 from sqlalchemy import ForeignKey, PrimaryKeyConstraint, ForeignKeyConstraint
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from datetime import datetime
@@ -8,152 +5,45 @@ from datetime import datetime
 from .base import Base, BaseWithNormalizedName
 from .utilities import representation, getdeepattr
 
+from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from .roasters import Roaster
+    from .identities import Identity, Location
     from db.models import RoastedCoffee
 
 
-class Service(BaseWithNormalizedName):
+class Service(Base):
     """
-    Company/brand name of coffee service. Mapped to locations via association
-    table.
+    Company/brand name of coffee service.
 
     Required attributes:
-        name(str)
+        id: PK, FK (identities.id)
 
     Relationships:
-        roaster(Roaster)
-        locations(list[Location])
+        identity(Identity)
+        locations(list[Location]): via association
         roasted_coffees(list[RoastedCoffee]): list of roasted_coffees served
         coffee_associations(list[RoastedCoffeeAssociation])
     """
 
     __tablename__ = "service"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(ForeignKey("identities.id"), primary_key=True)
 
-    locations: Mapped[list["Location"]] = relationship(
-        secondary="service_location_associations", viewonly=True
-    )
-    location_associations: Mapped[list["ServiceLocationAssociation"]] = relationship(
-        back_populates="service"
-    )
+    identity: Mapped[Identity] = relationship()
+    locations: Mapped[list["Location"]] = relationship(secondary="identities")
     menu_items: Mapped[list["MenuItem"]] = relationship(back_populates="service")
-    coffee_associations: Mapped[list["ServiceCoffeeAssociation"]] = relationship(
-        back_populates="service"
-    )
     roasted_coffees: Mapped[list["RoastedCoffee"]] = relationship(
         secondary="service_coffee_associations",
         overlaps="coffee_associations, roasted_coffee, service",
     )
-
-    def __repr__(self):
-        return representation("Service", {"id": self.id, "name": self.name})
-
-
-class Location(Base):
-    """
-    Specific locations of coffee service. Can be branches of a chain or a point
-    of interest or event venue.
-
-    Required attributes:
-        retailer_id(int): the retailer that the location belongs to
-        type(str): what type of location
-
-    Optional attributes:
-        name(str)
-        address(str)
-        city(str)
-        state(str)
-        country_id(str)
-
-    Relationships:
-        service_associations(list[ServiceLocationAssociation])
-    """
-
-    __tablename__ = "locations"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-
-    name: Mapped[str | None]
-    address: Mapped[str | None]
-    city: Mapped[str | None]
-    state: Mapped[str | None]
-    country_id: Mapped[str] = mapped_column(ForeignKey("countries.id"))
-
-    service_associations: Mapped[list["ServiceLocationAssociation"]] = relationship(
-        back_populates="location"
+    coffee_associations: Mapped[list["ServiceCoffeeAssociation"]] = relationship(
+        back_populates="service"
     )
 
     def __repr__(self):
-        return representation(
-            title="ServiceLocation",
-            fields={
-                "name": self.name,
-                "city": self.city,
-                "state": self.state,
-                "country": self.country_id,
-            },
-        )
-
-
-class ServiceLocationAssociation(Base):
-    """
-    Association table for mapping of locations to services.
-
-    Required attributes:
-        service_id(int, FK)
-        location_id(int, FK)
-
-    Optional attributes:
-        address_detail(str): unit number, etc.
-        neighborhood(str)
-        name(str): the company's name for the specific location
-        description(str): e.g. coffeeshop, popup, restaurant
-        date_opened(datetime)
-        date_closed(datetime)
-
-    Relationships:
-        location(Location)
-        service(Service)
-    """
-
-    __tablename__ = "service_location_associations"
-
-    service_id: Mapped[int] = mapped_column(
-        ForeignKey("service.id"), primary_key=True, onupdate="CASCADE"
-    )
-    location_id: Mapped[int] = mapped_column(
-        ForeignKey("locations.id"), primary_key=True, onupdate="CASCADE"
-    )
-    address_detail: Mapped[str | None]
-    neighborhood: Mapped[str | None]
-    name: Mapped[str | None] = mapped_column(
-        comment="The company's name of the specific location or event"
-    )
-
-    description: Mapped[str | None] = mapped_column(
-        comment="e.g. coffeeshop, popup, restaurant"
-    )
-    date_opened: Mapped[datetime | None]
-    date_closed: Mapped[datetime | None]
-
-    location: Mapped["Location"] = relationship(back_populates="service_associations")
-    service: Mapped["Service"] = relationship(back_populates="location_associations")
-
-    def __repr__(self):
-        service = getdeepattr(self, "service.name")
-        location = getdeepattr(self, "location.name")
-
-        return representation(
-            "ServiceLocationAssociation",
-            fields={
-                "service": service,
-                "service_id": self.service_id if not service else None,
-                "location": location,
-                "location_id": self.location_id if not location else None,
-            },
-        )
+        return representation("Service", {"id": self.id, "name": "name"})
 
 
 class ServiceCoffeeAssociation(Base):
@@ -384,7 +274,7 @@ class MenuItemIngredientAssociation(Base):
 
     def __repr__(self):
         fields = {
-            "service": self.service.name,
+            "service": "name", #!TODO
             "menu_item": self.menu_item.name,
             "ingredient": self.ingredient,
         }

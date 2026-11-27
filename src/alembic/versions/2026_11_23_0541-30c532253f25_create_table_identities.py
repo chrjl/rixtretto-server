@@ -58,6 +58,38 @@ def upgrade() -> None:
         comment="List of identities of coffee-related companies or people.",
     )
 
+    op.create_table(
+        "location_associations",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("identity_id", sa.Integer(), nullable=False),
+        sa.Column(
+            "type",
+            sa.String(),
+            nullable=True,
+            comment="type of location (e.g. roastery, coffeeshop, popup, restaurant)",
+        ),
+        sa.Column("name", sa.String(), nullable=True),
+        sa.Column("address", sa.String(), nullable=True),
+        sa.Column("address_detail", sa.String(), nullable=True),
+        sa.Column("neighborhood", sa.String(), nullable=True),
+        sa.Column("city", sa.String(), nullable=True),
+        sa.Column("country_id", sa.String(length=2), nullable=False),
+        sa.Column("date_opened", sa.DateTime(), nullable=True),
+        sa.Column("date_closed", sa.DateTime(), nullable=True),
+        sa.Column("details", sa.JSON(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["country_id"],
+            ["countries.id"],
+            name=op.f("fk_location_associations_country_id_countries"),
+        ),
+        sa.ForeignKeyConstraint(
+            ["identity_id"],
+            ["identities.id"],
+            name=op.f("fk_location_associations_identity_id_identities"),
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_location_associations")),
+    )
+
     # Seed roaster identities
     connection.execute(
         sa.insert(identities_table).from_select(

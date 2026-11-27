@@ -12,12 +12,10 @@ from .coffees import (
 )
 from .service import (
     Service,
-    Location,
-    ServiceLocationAssociation,
     ServiceCoffeeAssociation,
     MenuItem,
     MenuItemVariant,
     Ingredient,
     MenuItemIngredientAssociation,
 )
-from .identities import Identity
+from .identities import Identity, Location

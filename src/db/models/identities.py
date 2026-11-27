@@ -1,8 +1,10 @@
-from .base import BaseWithNormalizedName
+from .base import Base, BaseWithNormalizedName
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
-from .utilities import representation
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from .utilities import representation, getdeepattr
+
+from datetime import datetime
 
 
 class Identity(BaseWithNormalizedName):
@@ -18,9 +20,7 @@ class Identity(BaseWithNormalizedName):
         identified with.
 
     Relationships:
-        roaster: back-populates `roaster.id`
-        service: back-populates `service.id`
-        locations: back-populates `locations.id`
+        locations(list[Location]): back-populates `locations.identity_id`
 
     JSON attributes:
         details: additional contact details (see contact.schema.json)
@@ -32,16 +32,6 @@ class Identity(BaseWithNormalizedName):
                         "network": "facebook",
                         "handle": "ggetla",
                         "url": "https://facebook.com/ggetla"
-                    }
-                ],
-                "locations": [
-                    {
-                        "name": "Grand Central Market",
-                        "type": "coffeebar",
-                        "address": "317 S Broadway",
-                        "city": "Los Angeles",
-                        "state": "CA",
-                        "zipcode": 90013
                     }
                 ],
                 "contacts": [
@@ -72,5 +62,69 @@ class Identity(BaseWithNormalizedName):
         comment="Can include contact information, website, socials profiles, location details, etc.",
     )
 
+    locations: Mapped[list[Location]] = relationship(back_populates="identity")
+
     def __repr__(self):
         return representation("Identity", {"id": self.id, "name": self.name})
+
+
+class Location(Base):
+    """
+    Specific locations of coffee service. Can be branches of a chain or a point
+    of interest or event venue.
+
+    Required attributes:
+        identity_id(int): the identity that the location belongs to
+        type(str): type of location (e.g. roastery, coffeeshop, popup, restaurant)
+
+    Optional attributes:
+        name(str)
+        address(str)
+        address_detail(str): unit number, etc.
+        neighborhood(str)
+        city(str)
+        country_id(str)
+        date_opened(datetime)
+        date_closed(datetime)
+        details(JSON)
+
+    Relationships:
+        identity(Identity): backpopulates `identity.locations`
+    """
+
+    __tablename__ = "location_associations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    identity_id: Mapped[int] = mapped_column(ForeignKey("identities.id"))
+    type: Mapped[str | None] = mapped_column(
+        comment="type of location (e.g. roastery, coffeeshop, popup, restaurant)"
+    )
+
+    name: Mapped[str | None]
+    address: Mapped[str | None]
+    address_detail: Mapped[str | None]
+    neighborhood: Mapped[str | None]
+    city: Mapped[str | None]
+    country_id: Mapped[str] = mapped_column(ForeignKey("countries.id"))
+
+    date_opened: Mapped[datetime | None]
+    date_closed: Mapped[datetime | None]
+
+    details: Mapped[dict]
+
+    identity: Mapped[Identity] = relationship(back_populates="locations")
+
+    def __repr__(self):
+        identity_name = getdeepattr(self, "identity.name", None)
+
+        fields = {
+            "id": self.id,
+            "identity": identity_name,
+            "identity_id": (
+                getattr(self, "identity_id", None) if not identity_name else None
+            ),
+            "type": getattr(self, "type", None),
+            "name": getattr(self, "name", None),
+        }
+
+        return representation(title="Location", fields=fields)
